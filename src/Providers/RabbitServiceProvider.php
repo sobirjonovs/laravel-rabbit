@@ -19,7 +19,7 @@ class RabbitServiceProvider extends ServiceProvider
                 $configPath . 'amqp.php' => config_path('amqp.php'),
                 $configPath . 'helpers.php' => config_path('rabbit_helpers.php'),
                 $configPath . 'events.php' => config_path('rabbit_events.php'),
-            ], 'config');
+            ], 'rabbit-config');
 
             $this->publishes([
                 $providerPath . 'RabbitServiceProvider.stub' => app_path('Providers/RabbitmqServiceProvider.php')
