@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Providers;
+
+use App\Rabbitmq\Rabbit\Client;
+use App\Rabbitmq\Rabbit\MessageDispatcher;
+use Illuminate\Support\ServiceProvider;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+
+class RabbitServiceProvider extends ServiceProvider
+{
+    /**
+     * @return void
+     */
+    public function register()
+    {
+        $this->app->singleton(AMQPStreamConnection::class, function () {
+            return new AMQPStreamConnection(
+                config('amqp.host'),
+                config('amqp.port'),
+                config('amqp.username'),
+                config('amqp.password'),
+                config('amqp.vhost')
+            );
+        });
+
+        $this->app->bind('rabbitmq.dispatcher', MessageDispatcher::class);
+
+        $this->app->singleton(Client::class, function ($app) {
+            $client = new Client($app->make(AMQPStreamConnection::class));
+            $client->addQueues(['queue-one', 'queue-two']);
+
+            return $client;
+        });
+    }
+}
