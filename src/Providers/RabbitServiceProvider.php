@@ -22,7 +22,7 @@ class RabbitServiceProvider extends ServiceProvider
             ], 'rabbit-config');
 
             $this->publishes([
-                $providerPath . 'RabbitServiceProvider.stub' => app_path('Providers/RabbitmqServiceProvider.php')
+                $providerPath . 'RabbitServiceProvider.stub' => app_path('Providers/RabbitServiceProvider.php')
             ], 'rabbit-providers');
         }
     }
