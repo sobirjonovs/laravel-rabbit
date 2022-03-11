@@ -43,8 +43,6 @@ class MessageDispatcher
                 throw new Exception("The current method [$name] not found");
             }
 
-            $method = $this->methods[$method];
-
             $object = $this->app->make(data_get($method, 'dto'), ['parameters' => $parameters]);
 
             $callback = [$this->app->make(data_get($method, 'class')), data_get($method, 'action')];
