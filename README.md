@@ -10,6 +10,7 @@ php artisan vendor:publish --tag=rabbit-configs
 ```php
 php artisan vendor:publish --tag=rabbit-providers
 ```php
+
 # Settings
 - config/amqp.php - RabbitMQ settings
 - config/rabbit_events.php - Write methods what they are responsible for the events dispatched from another microservice
