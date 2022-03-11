@@ -9,7 +9,7 @@ php artisan vendor:publish --tag=rabbit-configs
 # Load service provider
 ```php
 php artisan vendor:publish --tag=rabbit-providers
-```php
+```
 
 # Settings
 - config/amqp.php - RabbitMQ settings
