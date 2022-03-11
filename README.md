@@ -25,7 +25,7 @@ use App\Rabbitmq\Rabbit\Client;
 use PhpAmqpLib\Message\AMQPMessage;
     
 $client = app(Client::class);
-$client->consume('web-service', function (AMQPMessage $message) {
+$client->consume('queue-one', function (AMQPMessage $message) {
     /**
      * @var Client $this
     */
