@@ -63,21 +63,21 @@ class Client implements RabbitContract
     {
         $this->connection = $client;
         $this->channel = $this->connection->channel();
-
-        $this->init();
     }
 
     /**
-     * @return void
+     * @return Client
      * @throws Exception
      */
-    protected function init()
+    public function init(): Client
     {
         foreach ($this->queues as $queue) {
             $this->setQueue($queue, false);
         }
 
         $this->setQos();
+
+        return $this;
     }
 
     /**

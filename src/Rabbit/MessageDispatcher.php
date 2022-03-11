@@ -17,7 +17,7 @@ class MessageDispatcher
     /**
      * @var Application $app
      */
-    protected Application $app;
+    protected $app;
 
     /**
      * @param Application $application
