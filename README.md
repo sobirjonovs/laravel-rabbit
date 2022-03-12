@@ -2,22 +2,22 @@
 ```php
 composer require sobirjonovs/laravel-rabbit
 ```
-# Load configuration files
+## Load configuration files
 ```php
 php artisan vendor:publish --tag=rabbit-configs
 ```
-# Load service provider
+## Load service provider
 ```php
 php artisan vendor:publish --tag=rabbit-providers
 ```
 
-# Settings
+## Settings
 - `config/amqp.php` - RabbitMQ settings
 - `config/rabbit_events.php` - Write methods what they are responsible for the events dispatched from another microservice
 - `app/Providers/RabbitServicePRovider` - Write queues what to be declared at runtime
 
-## Examples
-# 1. Consuming messages
+# Examples
+## 1. Consuming messages
 ```php
 <?php
 
@@ -25,7 +25,7 @@ use App\Rabbitmq\Rabbit\Client;
 use PhpAmqpLib\Message\AMQPMessage;
     
 $client = app(Client::class);
-$client->consume('web-service', function (AMQPMessage $message) {
+$client->consume('queue-one', function (AMQPMessage $message) {
     /**
      * @var Client $this
     */
@@ -37,7 +37,7 @@ $client->consume('web-service', function (AMQPMessage $message) {
 ?>
 ```
 
-# 2. Publishing message
+## 2. Publishing message
 ```php
 <?php
 
@@ -53,7 +53,7 @@ $client->setMessage([
 ?>
 ```
 
-# 3. Publishing and consuming a message at once
+## 3. Publishing and consuming a message at once
 ```php
 <?php
 
