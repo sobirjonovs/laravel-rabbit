@@ -7,10 +7,10 @@ use Closure;
 interface RabbitContract
 {
     /**
-     * @param string $queue
+     * @param string|null $queue
      * @return mixed
      */
-    public function request(string $queue = 'queue'): self;
+    public function request(string $queue = null): self;
 
     /**
      * @param string $queue

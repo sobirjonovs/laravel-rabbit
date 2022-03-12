@@ -10,9 +10,8 @@ use App\Rabbitmq\Contracts\Dto\AbstractDataObjectTransfer;
  */
 class ProductCreateObject extends AbstractDataObjectTransfer
 {
-
     /**
-     * @inheritDoc
+     * @return array
      */
     public function only(): array
     {

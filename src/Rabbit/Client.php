@@ -56,6 +56,12 @@ class Client implements RabbitContract
     protected $queues = [];
 
     /**
+     * Default queue will be used if request queue is not defined
+     * @var string $defaultQueue
+     */
+    protected $defaultQueue = "";
+
+    /**
      * @param AMQPStreamConnection $client
      * @throws Exception
      */
@@ -81,12 +87,19 @@ class Client implements RabbitContract
     }
 
     /**
-     * @param string $queue
+     * @param string|null $queue
      * @return Client
      * @throws ErrorException
+     * @throws Exception
      */
-    public function request(string $queue = 'queue'): Client
+    public function request(string $queue = null): Client
     {
+        $queue = $queue ?? $this->defaultQueue;
+
+        if (blank($queue)) {
+            throw new Exception("Default queue or queue is not defined");
+        }
+
         $this->consume($this->callback, function (AMQPMessage $message) {
             $this->result = $message->getBody();
 
@@ -107,7 +120,7 @@ class Client implements RabbitContract
 
     /**
      * @param string|array $text
-     * @param array|null $parameters
+     * @param array $parameters
      * @return AMQPMessage
      */
     public function message($text, array $parameters = []): AMQPMessage
@@ -162,7 +175,6 @@ class Client implements RabbitContract
 
     /**
      * @return $this
-     * @throws ErrorException
      */
     public function wait(): Client
     {
@@ -173,6 +185,10 @@ class Client implements RabbitContract
         return $this;
     }
 
+    /**
+     * @param AMQPMessage $message
+     * @return void
+     */
     public function dispatchEvents(AMQPMessage $message)
     {
         /**
@@ -285,6 +301,17 @@ class Client implements RabbitContract
     public function addQueues(array $names): Client
     {
         $this->queues = $names;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     * @return $this
+     */
+    public function setDefaultQueue(string $name): Client
+    {
+        $this->defaultQueue = $name;
 
         return $this;
     }

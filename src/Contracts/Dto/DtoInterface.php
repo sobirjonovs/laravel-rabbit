@@ -12,6 +12,11 @@ interface DtoInterface
     public function toArray(): array;
 
     /**
+     * @return string
+     */
+    public function toJson(): string;
+
+    /**
      * @return Collection
      */
     public function toCollection(): Collection;
