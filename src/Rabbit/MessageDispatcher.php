@@ -45,7 +45,7 @@ class MessageDispatcher
 
             $object = $this->app->make(data_get($method, 'dto'), ['parameters' => $parameters]);
 
-            $callback = [$this->app->make(data_get($method, 'class')), data_get($method, 'action')];
+            $callback = [$this->app->make(data_get($method, 'class')), data_get($method, 'method')];
 
             return $this->app->call($callback, ['object' => $object]);
         } catch (BindingResolutionException|Exception $exception) {
