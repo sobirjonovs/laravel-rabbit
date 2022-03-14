@@ -2,10 +2,11 @@
 
 namespace App\Rabbitmq\Rabbit;
 
-use Exception;
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Illuminate\Contracts\Foundation\Application;
 use Log;
+use Exception;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Container\BindingResolutionException;
 
 class MessageDispatcher
 {
@@ -50,6 +51,11 @@ class MessageDispatcher
             return $this->app->call($callback, ['object' => $object]);
         } catch (BindingResolutionException|Exception $exception) {
             Log::error("Exception: [{$exception->getMessage()}]");
+        } catch (ValidationException $validationException) {
+            return [
+                'success' => false,
+                'message' => $validationException->errors()
+            ];
         }
     }
 }

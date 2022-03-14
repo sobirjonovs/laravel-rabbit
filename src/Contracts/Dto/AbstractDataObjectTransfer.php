@@ -3,6 +3,7 @@
 namespace App\Rabbitmq\Contracts\Dto;
 
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 abstract class AbstractDataObjectTransfer implements DtoInterface
 {
@@ -12,11 +13,23 @@ abstract class AbstractDataObjectTransfer implements DtoInterface
     protected $object;
 
     /**
+     * Validation rules for the DTO
+     * @var array $rules
+     */
+    protected $rules = [];
+
+    /**
+     * @var $validator
+     */
+    private $validator;
+
+    /**
      * @param array $parameters
      */
     public function __construct(array $parameters = [])
     {
         $this->object = collect($parameters);
+        $this->validate();
     }
 
     /**
@@ -76,5 +89,18 @@ abstract class AbstractDataObjectTransfer implements DtoInterface
     public function isNull(string $key): bool
     {
         return $this->object->get($key) === null;
+    }
+
+    /**
+     * @return void
+     * @throws ValidationException
+     */
+    protected function validate()
+    {
+        $this->validator = validator()->make($this->toArray(), $this->rules);
+
+        if (! empty($this->rules) && $this->validator->fails()) {
+            throw new ValidationException($this->validator);
+        }
     }
 }
