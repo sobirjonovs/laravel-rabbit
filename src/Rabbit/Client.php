@@ -6,6 +6,8 @@ use App\Rabbitmq\Contracts\RabbitContract;
 use Closure;
 use ErrorException;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use PhpAmqpLib\Channel\AbstractChannel;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
@@ -38,6 +40,16 @@ class Client implements RabbitContract
      * @var string|array|AMQPMessage $message
      */
     protected $message = '';
+
+    /**
+     * @var string $user
+     */
+    protected $user;
+
+    /**
+     * @var string $guard
+     */
+    protected $guard;
 
     /**
      * @var bool $isRpc
@@ -127,6 +139,10 @@ class Client implements RabbitContract
     {
         $message = is_array($text) ? json_encode($text) : $text;
 
+        if (empty($parameters)) {
+            $parameters['user_id'] = $this->user;
+        }
+
         if ($this->isRpc && empty($parameters)) {
             $this->setQueue();
 
@@ -196,13 +212,19 @@ class Client implements RabbitContract
          */
         $data = json_decode($message->getBody(), true);
 
+        $this->authenticate($message->get('user_id'));
+
         $result = Rabbitmq::dispatch(
             data_get($data, 'method', 'default'),
             data_get($data, 'params', [])
         );
 
         if ($message->has('reply_to') && $message->has('correlation_id')) {
-            $this->setParams(['correlation_id' => $message->get('correlation_id')])
+            $this
+                ->setParams([
+                    'correlation_id' => $message->get('correlation_id'),
+                    'user_id' => $this->user
+                ])
                 ->setMessage($result)
                 ->publish($message->get('reply_to'));
         }
@@ -270,7 +292,7 @@ class Client implements RabbitContract
     public function setQueue(string $queue = '', bool $exclusive = true): Client
     {
         $queue = $this->channel->queue_declare(
-            $queue, false, ! $exclusive, $exclusive, false
+            $queue, false, !$exclusive, $exclusive, false
         );
 
         if ($exclusive) {
@@ -314,5 +336,51 @@ class Client implements RabbitContract
         $this->defaultQueue = $name;
 
         return $this;
+    }
+
+    /**
+     * @param string $name
+     * @return $this
+     */
+    public function setUser(string $name)
+    {
+        $this->user = $name;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     * @return $this
+     */
+    public function setGuard(string $name = null)
+    {
+        $this->guard = $guard ?? config('auth.defaults.guard');
+
+        return $this;
+    }
+
+    /**
+     * @return Model
+     */
+    private function getModel()
+    {
+        return auth()->guard($this->guard)->getProvider()->createModel();
+    }
+
+    /**
+     * @return Model
+     */
+    private function retrieveUserByName(string $name)
+    {
+        return $this->getModel()->whereName($name)->first();
+    }
+
+    /**
+     * @return void
+     */
+    protected function authenticate(string $name)
+    {
+        return auth()->guard($this->guard)->login($this->retrieveUserByName($name));
     }
 }
