@@ -341,8 +341,6 @@ class Client implements RabbitContract
             ]);
         }
 
-        info("PARASA: ", $this->params);
-
         return $this;
     }
 
