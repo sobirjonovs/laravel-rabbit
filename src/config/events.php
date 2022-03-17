@@ -6,7 +6,7 @@ use App\Rabbitmq\Services\ProductService;
 return [
     'createProduct' => [
         'class' => ProductService::class,
-        'action' => 'createProduct',
+        'method' => 'createProduct',
         'dto' => ProductCreateObject::class
     ]
 ];

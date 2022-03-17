@@ -7,11 +7,11 @@ use Closure;
 use ErrorException;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use PhpAmqpLib\Channel\AbstractChannel;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 use Rabbitmq;
 
 class Client implements RabbitContract
@@ -42,9 +42,16 @@ class Client implements RabbitContract
     protected $message = '';
 
     /**
+     * Remote microservice user name
      * @var string $user
      */
     protected $user;
+
+    /**
+     * Local database column of the model
+     * @var string $column
+     */
+    protected $column;
 
     /**
      * @var string $guard
@@ -52,9 +59,9 @@ class Client implements RabbitContract
     protected $guard;
 
     /**
-     * @var bool $isRpc
+     * @var bool $rpc
      */
-    protected $isRpc;
+    protected $rpc = false;
 
     /**
      * @var array $params
@@ -112,6 +119,8 @@ class Client implements RabbitContract
             throw new Exception("Default queue or queue is not defined");
         }
 
+        $this->viaRpc()->publish($queue);
+
         $this->consume($this->callback, function (AMQPMessage $message) {
             $this->result = $message->getBody();
 
@@ -123,8 +132,6 @@ class Client implements RabbitContract
             $this->stop();
         });
 
-        $this->publish($queue);
-
         $this->wait();
 
         return $this;
@@ -132,27 +139,15 @@ class Client implements RabbitContract
 
     /**
      * @param string|array $text
-     * @param array $parameters
      * @return AMQPMessage
      */
-    public function message($text, array $parameters = []): AMQPMessage
+    protected function message($text): AMQPMessage
     {
         $message = is_array($text) ? json_encode($text) : $text;
 
-        if (empty($parameters)) {
-            $parameters['user_id'] = $this->user;
-        }
+        $this->configure();
 
-        if ($this->isRpc && empty($parameters)) {
-            $this->setQueue();
-
-            $parameters = array_merge($parameters, [
-                'reply_to' => $this->callback,
-                'correlation_id' => uniqid('corr_')
-            ]);
-        }
-
-        return new AMQPMessage($message, $parameters);
+        return new AMQPMessage($message, $this->params);
     }
 
     /**
@@ -184,7 +179,7 @@ class Client implements RabbitContract
      */
     public function publish(string $queue, string $exchange = ''): Client
     {
-        $this->channel->basic_publish($this->message, $exchange, $queue);
+        $this->channel->basic_publish($this->message($this->message), $exchange, $queue);
 
         return $this;
     }
@@ -212,7 +207,7 @@ class Client implements RabbitContract
          */
         $data = json_decode($message->getBody(), true);
 
-        $this->authenticate($message->get('user_id'));
+        $this->authenticate($this->extract('user_name', $message));
 
         $result = Rabbitmq::dispatch(
             data_get($data, 'method', 'default'),
@@ -220,11 +215,7 @@ class Client implements RabbitContract
         );
 
         if ($message->has('reply_to') && $message->has('correlation_id')) {
-            $this
-                ->setParams([
-                    'correlation_id' => $message->get('correlation_id'),
-                    'user_id' => $this->user
-                ])
+            $this->setParams(['correlation_id' => $message->get('correlation_id')])
                 ->setMessage($result)
                 ->publish($message->get('reply_to'));
         }
@@ -266,20 +257,18 @@ class Client implements RabbitContract
      */
     public function setParams(array $params): Client
     {
-        $this->params = $params;
+        $this->params = array_merge($this->params, $params);
 
         return $this;
     }
 
     /**
      * @param $message
-     * @param bool $isRpc
      * @return $this
      */
-    public function setMessage($message, bool $isRpc = true): Client
+    public function setMessage($message): Client
     {
-        $this->isRpc = $isRpc;
-        $this->message = $this->message($message, $this->params);
+        $this->message = $message;
 
         return $this;
     }
@@ -328,6 +317,36 @@ class Client implements RabbitContract
     }
 
     /**
+     * @return $this
+     */
+    protected function viaRpc()
+    {
+        $this->rpc = true;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    protected function configure()
+    {
+        $this->setParams(['application_headers' => new AMQPTable([
+            'user_name' => $this->user
+        ])]);
+
+        if (true === $this->rpc) {
+            $this->setQueue()->setParams([
+                'reply_to' => $this->callback, 'correlation_id' => uniqid('corr_')
+            ]);
+        }
+
+        info("PARASA: ", $this->params);
+
+        return $this;
+    }
+
+    /**
      * @param string $name
      * @return $this
      */
@@ -345,6 +364,17 @@ class Client implements RabbitContract
     public function setUser(string $name)
     {
         $this->user = $name;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     * @return $this
+     */
+    public function setColumn(string $name)
+    {
+        $this->column = $name;
 
         return $this;
     }
@@ -373,7 +403,9 @@ class Client implements RabbitContract
      */
     private function retrieveUserByName(string $name)
     {
-        return $this->getModel()->whereName($name)->first();
+        $column = ucfirst(strtolower($this->column));
+
+        return $this->getModel()->{ 'where' . $column }($name)->first();
     }
 
     /**
@@ -382,5 +414,15 @@ class Client implements RabbitContract
     protected function authenticate(string $name)
     {
         return auth()->guard($this->guard)->login($this->retrieveUserByName($name));
+    }
+
+    /**
+     * @param string $key
+     * @param AMQPMessage $message
+     * @return array|mixed
+     */
+    protected function extract(string $key, AMQPMessage $message)
+    {
+        return data_get($message->get('application_headers')->getNativeData(), $key);
     }
 }

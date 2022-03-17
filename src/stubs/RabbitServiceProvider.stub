@@ -31,7 +31,10 @@ class RabbitServiceProvider extends ServiceProvider
 
             return $client
                 ->addQueues(['queue-one', 'queue-two'])
-                ->setDefaultQueue('default')
+                ->setDefaultQueue('queue-one')
+                ->setColumn('name')
+                ->setGuard('web') // if not provided, default guard will be used
+                ->setUser('admin') // remote auth user name
                 ->init();
         });
     }

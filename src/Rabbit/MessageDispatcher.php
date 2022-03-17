@@ -38,17 +38,22 @@ class MessageDispatcher
     {
         try {
             $methods = $this->methods;
+            $data = [];
             $method = data_get($methods, $name);
 
             if (null === $method) {
                 throw new Exception("The current method [$name] not found");
             }
 
-            $object = $this->app->make(data_get($method, 'dto'), ['parameters' => $parameters]);
+            $dto = data_get($method, 'dto');
+
+            if (null !== $dto) {
+                $data['object'] = $this->app->make($dto, ['parameters' => $parameters]);
+            }
 
             $callback = [$this->app->make(data_get($method, 'class')), data_get($method, 'method')];
 
-            return $this->app->call($callback, ['object' => $object]);
+            return $this->app->call($callback, $data);
         } catch (BindingResolutionException|Exception $exception) {
             Log::error("Exception: [{$exception->getMessage()}]");
         } catch (ValidationException $validationException) {
