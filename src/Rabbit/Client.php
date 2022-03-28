@@ -81,6 +81,12 @@ class Client implements RabbitContract
     protected $defaultQueue = "";
 
     /**
+     * Defines whether incoming message should be authorized
+     * @var bool $authorize
+     */
+    protected $authorize = false;
+
+    /**
      * @param AMQPStreamConnection $client
      * @throws Exception
      */
@@ -207,7 +213,9 @@ class Client implements RabbitContract
          */
         $data = json_decode($message->getBody(), true);
 
-        $this->authenticate($this->extract('user_name', $message));
+        if ($this->shouldAuthenticate()) {
+            $this->authenticate($this->extract('user_name', $message));
+        }
 
         $result = Rabbitmq::dispatch(
             data_get($data, 'method', 'default'),
@@ -274,6 +282,26 @@ class Client implements RabbitContract
     }
 
     /**
+     * @return $this
+     */
+    public function enableAuthentication(): Client
+    {
+        $this->authorize = true;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableAuthentication(): Client
+    {
+        $this->authorize = false;
+
+        return $this;
+    }
+
+    /**
      * @param string $queue
      * @param bool $exclusive
      * @return Client
@@ -324,6 +352,14 @@ class Client implements RabbitContract
         $this->rpc = true;
 
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function shouldAuthenticate(): bool
+    {
+        return $this->authorize;
     }
 
     /**

@@ -35,6 +35,9 @@ class RabbitServiceProvider extends ServiceProvider
                 ->setColumn('name')
                 ->setGuard('web') // if not provided, default guard will be used
                 ->setUser('admin') // remote auth user name
+                // authentication is disabled by default
+                // ->disableAuthentication()
+                ->enableAuthentication()
                 ->init();
         });
     }
