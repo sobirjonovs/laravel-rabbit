@@ -54,13 +54,13 @@ class MessageDispatcher
             $callback = [$this->app->make(data_get($method, 'class')), data_get($method, 'method')];
 
             return $this->app->call($callback, $data);
-        } catch (BindingResolutionException|Exception $exception) {
-            Log::error("Exception: [{$exception->getMessage()}]");
         } catch (ValidationException $validationException) {
             return [
                 'success' => false,
                 'message' => $validationException->errors()
             ];
+        } catch (BindingResolutionException|Exception $exception) {
+            Log::error("Exception: [{$exception->getMessage()}]");
         }
     }
 }
