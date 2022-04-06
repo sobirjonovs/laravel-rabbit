@@ -134,7 +134,7 @@ class Client implements RabbitContract
                 $this->result = json_decode($this->result, true);
             }
 
-            $message->ack();
+            $message->ack(true);
             $this->stop();
         });
 
@@ -223,7 +223,8 @@ class Client implements RabbitContract
         );
 
         if ($message->has('reply_to') && $message->has('correlation_id')) {
-            $this->setParams(['correlation_id' => $message->get('correlation_id')])
+            $this->open()
+                ->setParams(['correlation_id' => $message->get('correlation_id')])
                 ->setMessage($result)
                 ->publish($message->get('reply_to'));
         }
@@ -254,9 +255,10 @@ class Client implements RabbitContract
      */
     public function open(): Client
     {
-        $this->connection->getConnection()->reconnect();
+        $this->connection->reconnect();
+        $this->channel = $this->connection->channel();
 
-        return app(Client::class);
+        return $this;
     }
 
     /**
