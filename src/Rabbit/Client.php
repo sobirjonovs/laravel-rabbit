@@ -255,8 +255,13 @@ class Client implements RabbitContract
      */
     public function open(): Client
     {
-        $this->connection->reconnect();
-        $this->channel = $this->connection->channel();
+        if (! $this->connection->isConnected()) {
+            $this->connection->reconnect();
+        }
+
+        if (! $this->channel->is_open()) {
+            $this->channel = $this->connection->channel();
+        }
 
         return $this;
     }
