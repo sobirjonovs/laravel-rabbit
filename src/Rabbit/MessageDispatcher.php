@@ -60,7 +60,10 @@ class MessageDispatcher
                 'message' => $validationException->errors()
             ];
         } catch (BindingResolutionException|Exception $exception) {
-            Log::error("Exception: [{$exception->getMessage()}]");
+            return [
+                'success' => false,
+                'message' => $exception->getMessage()
+            ];
         }
     }
 }
