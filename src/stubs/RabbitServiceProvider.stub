@@ -20,7 +20,17 @@ class RabbitServiceProvider extends ServiceProvider
                 config('amqp.port'),
                 config('amqp.username'),
                 config('amqp.password'),
-                config('amqp.vhost')
+                config('amqp.vhost'),
+                config('amqp.insist'),
+                config('amqp.login_method'),
+                config('amqp.login_response'),
+                config('amqp.locale'),
+                config('amqp.connection_timeout'),
+                config('amqp.read_and_write_timeout'),
+                config('amqp.context'),
+                config('amqp.keepalive'),
+                config('amqp.heartbeat'),
+                config('amqp.channel_rpc_timeout'),
             );
         });
 
