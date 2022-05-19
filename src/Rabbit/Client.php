@@ -435,10 +435,11 @@ class Client implements RabbitContract
 
     /**
      * @return string
+     * @throws Exception
      */
     public function getDefaultQueue(bool $multi = true): string
     {
-        return $this->defaultQueue . substr(time(), -1, $multi);
+        return $this->defaultQueue . random_int(0, 8);
     }
 
     /**
