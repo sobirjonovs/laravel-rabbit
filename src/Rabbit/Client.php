@@ -119,7 +119,9 @@ class Client implements RabbitContract
      */
     public function request(string $queue = null): Client
     {
-        $queue = $queue ?? $this->defaultQueue;
+        if ($queue === null) {
+            $queue = $this->getDefaultQueue();
+        }
 
         if (blank($queue)) {
             throw new Exception("Default queue or queue is not defined");
@@ -429,6 +431,14 @@ class Client implements RabbitContract
         $this->guard = $guard ?? config('auth.defaults.guard');
 
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefaultQueue(bool $multi = true): string
+    {
+        return $this->defaultQueue . substr(time(), -1, $multi);
     }
 
     /**
