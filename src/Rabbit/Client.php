@@ -206,17 +206,15 @@ class Client implements RabbitContract
 
     /**
      * Only for long-running tasks
-     * @return $this
+     * @return void
      */
-    public function waitForever(): Client
+    public function waitForever()
     {
         if (! $this->channel->is_open()) {
             $this->open();
         }
 
         $this->channel->wait();
-
-        return $this;
     }
 
     /**
