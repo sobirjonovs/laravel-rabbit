@@ -22,6 +22,11 @@ class Client implements RabbitContract
     protected $channel;
 
     /**
+     * @var AbstractChannel|AMQPChannel $rpcChannel
+     */
+    protected $rpcChannel;
+
+    /**
      * @var mixed|string|null
      */
     protected $callback = '';
@@ -30,6 +35,11 @@ class Client implements RabbitContract
      * @var AMQPStreamConnection $connection
      */
     protected $connection;
+
+    /**
+     * @var AMQPStreamConnection $rpcConnection
+     */
+    protected $rpcConnection;
 
     /**
      * @var string|array $result
@@ -103,7 +113,7 @@ class Client implements RabbitContract
     public function init(): Client
     {
         foreach ($this->queues as $queue) {
-            $this->setQueue($queue, false);
+            $this->setQueue($queue);
         }
 
         $this->setQos();
@@ -129,33 +139,16 @@ class Client implements RabbitContract
 
         $this->viaRpc()->publish($queue);
 
-        $this->consume($this->callback, function (AMQPMessage $message) {
-            $this->result = $message->getBody();
-
-            if (isJson($this->result)) {
-                $this->result = json_decode($this->result, true);
-            }
+        $this->consumeRpc($this->callback, function (AMQPMessage $message) {
+            $this->result = $this->unserialize($message->getBody());
 
             $message->ack(true);
-            $this->stop();
+            $this->stopRpc();
         });
 
-        $this->wait();
+        $this->waitRpc();
 
         return $this;
-    }
-
-    /**
-     * @param string|array $text
-     * @return AMQPMessage
-     */
-    protected function message($text): AMQPMessage
-    {
-        $message = is_array($text) ? json_encode($text) : $text;
-
-        $this->configure();
-
-        return new AMQPMessage($message, $this->params);
     }
 
     /**
@@ -167,9 +160,31 @@ class Client implements RabbitContract
     {
         $callback = $callback->bindTo($this, get_class($this));
 
-        $this->channel->basic_consume(
+        $this->getChannel()->basic_consume(
             $queue,
             uniqid('consumer_'),
+            false,
+            false,
+            false,
+            false,
+            $callback
+        );
+
+        return $this;
+    }
+
+    /**
+     * @param string $queue
+     * @param Closure $callback
+     * @return $this
+     */
+    public function consumeRpc(string $queue, Closure $callback): Client
+    {
+        $callback = $callback->bindTo($this, get_class($this));
+
+        $this->getRpcChannel()->basic_consume(
+            $queue,
+            uniqid("rpc_consumer_"),
             false,
             false,
             false,
@@ -187,7 +202,14 @@ class Client implements RabbitContract
      */
     public function publish(string $queue, string $exchange = ''): Client
     {
-        $this->channel->basic_publish($this->message($this->message), $exchange, $queue);
+        $message = $this->getMessage();
+        $channel = $this->getChannel();
+
+        if ($this->isRpc()) {
+            $channel = $this->getRpcChannel();
+        }
+
+        $channel->basic_publish($message, $exchange, $queue);
 
         return $this;
     }
@@ -197,22 +219,23 @@ class Client implements RabbitContract
      */
     public function wait(): Client
     {
-        while ($this->channel->is_open()) {
-            $this->channel->wait();
+        while ($this->getChannel()->is_open()) {
+            $this->getChannel()->wait();
         }
 
         return $this;
     }
 
     /**
-     * Only for long-running tasks
-     * @return void
+     * @return $this
      */
-    public function waitForever()
+    public function waitRpc(): Client
     {
-        $this->wait()->open();
+        while ($this->getRpcChannel()->is_open()) {
+            $this->getRpcChannel()->wait();
+        }
 
-        return $this->waitForever();
+        return $this;
     }
 
     /**
@@ -224,7 +247,7 @@ class Client implements RabbitContract
         /**
          * @var array $data
          */
-        $data = json_decode($message->getBody(), true);
+        $data = $this->unserialize($message->getBody());
 
         if ($this->shouldAuthenticate()) {
             $this->authenticate($this->extract('user_name', $message));
@@ -236,7 +259,8 @@ class Client implements RabbitContract
         );
 
         if ($message->has('reply_to') && $message->has('correlation_id')) {
-            $this->open()
+            $this->viaRpc()
+                ->setChannel($message->getChannel())
                 ->setParams(['correlation_id' => $message->get('correlation_id')])
                 ->setMessage($result)
                 ->publish($message->get('reply_to'));
@@ -252,31 +276,64 @@ class Client implements RabbitContract
     }
 
     /**
+     * @return AMQPChannel|null
+     */
+    public function getChannel(): ?AMQPChannel
+    {
+        return $this->channel;
+    }
+
+    /**
+     * @return AMQPChannel|null
+     */
+    public function getRpcChannel(): ?AMQPChannel
+    {
+        return $this->rpcChannel;
+    }
+
+    /**
+     * @return AMQPStreamConnection|null
+     */
+    public function getRpcConnection(): ?AMQPStreamConnection
+    {
+        return $this->rpcConnection;
+    }
+
+    /**
      * @return $this
      * @throws Exception
      */
-    public function stop(): Client
+    public function stopRpc(): Client
     {
-        $this->channel->close();
-        $this->connection->close();
+        $this->getRpcConnection()->close();
+        $this->getRpcChannel()->close();
 
         return $this;
     }
 
     /**
+     * @return bool
+     */
+    public function isRpc(): bool
+    {
+        return $this->rpc === true;
+    }
+
+    /**
+     * @deprecated
      * @return $this
      */
     public function open(): Client
     {
-        if (! $this->connection->isConnected()) {
-            $this->connection->reconnect();
-        }
-
-        if (! $this->channel->is_open()) {
-            $this->channel = $this->connection->channel();
-        }
-
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getParams(): array
+    {
+        return $this->params;
     }
 
     /**
@@ -297,6 +354,21 @@ class Client implements RabbitContract
     public function setMessage($message): Client
     {
         $this->message = $message;
+
+        return $this;
+    }
+
+    /**
+     * @param AMQPChannel $channel
+     * @return $this
+     */
+    public function setChannel(AMQPChannel $channel): Client
+    {
+        if ($this->rpc) {
+            $this->rpcChannel = $channel;
+        } else {
+            $this->channel = $channel;
+        }
 
         return $this;
     }
@@ -323,18 +395,25 @@ class Client implements RabbitContract
 
     /**
      * @param string $queue
-     * @param bool $exclusive
      * @return Client
      */
-    public function setQueue(string $queue = '', bool $exclusive = true): Client
+    public function setQueue(string $queue): Client
     {
-        $queue = $this->channel->queue_declare(
-            $queue, false, !$exclusive, $exclusive, false
+        $this->getChannel()->queue_declare(
+            $queue, false, true, false, false
         );
 
-        if ($exclusive) {
-            $this->callback = array_shift($queue);
-        }
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function setExclusiveQueue(): Client
+    {
+        $this->callback = head($this->getRpcChannel()->queue_declare(
+            '', false, false, true, false
+        ));
 
         return $this;
     }
@@ -351,6 +430,28 @@ class Client implements RabbitContract
         );
 
         return $this;
+    }
+
+    /**
+     * @param $message
+     * @return string
+     */
+    public function serialize($message): string
+    {
+        return json_encode($message);
+    }
+
+    /**
+     * @param $message
+     * @return mixed
+     */
+    public function unserialize($message)
+    {
+        if (isJson($message)) {
+            return json_decode($message, true);
+        }
+
+        return $message;
     }
 
     /**
@@ -391,8 +492,8 @@ class Client implements RabbitContract
             'user_name' => $this->user
         ])]);
 
-        if (true === $this->rpc) {
-            $this->setQueue()->setParams([
+        if (true === $this->rpc && $this->getRpcChannel() === null) {
+            $this->createRpc()->setExclusiveQueue()->setParams([
                 'reply_to' => $this->callback, 'correlation_id' => uniqid('corr_')
             ]);
         }
@@ -445,6 +546,17 @@ class Client implements RabbitContract
     }
 
     /**
+     * @return $this
+     */
+    public function createRpc(): Client
+    {
+        $this->rpcConnection = app(AMQPStreamConnection::class);
+        $this->rpcChannel = $this->rpcConnection->channel();
+
+        return $this;
+    }
+
+    /**
      * @return string
      * @throws Exception
      */
@@ -455,6 +567,22 @@ class Client implements RabbitContract
         }
 
         return $this->defaultQueue;
+    }
+
+    /**
+     * @return array|string|AMQPMessage
+     */
+    public function getMessage()
+    {
+        return new AMQPMessage($this->serialize($this->message), $this->configure()->getParams());
+    }
+
+    /**
+     * @return AMQPStreamConnection
+     */
+    public function getConnection(): AMQPStreamConnection
+    {
+        return $this->connection;
     }
 
     /**
