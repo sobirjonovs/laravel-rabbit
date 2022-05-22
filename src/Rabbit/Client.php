@@ -205,6 +205,21 @@ class Client implements RabbitContract
     }
 
     /**
+     * Only for long-running tasks
+     * @return $this
+     */
+    public function waitForever(): Client
+    {
+        if (! $this->channel->is_open()) {
+            $this->open();
+        }
+
+        $this->wait();
+
+        return $this;
+    }
+
+    /**
      * @param AMQPMessage $message
      * @return void
      */
