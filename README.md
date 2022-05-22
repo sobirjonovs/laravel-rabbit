@@ -44,7 +44,7 @@ $client->consume('queue-one', function (AMQPMessage $message) {
              * @var Client $this
              */
             $this->dispatchEvents($message);
-        })->wait();
+        })->wait(); // or waitForever();
 
 ?>
 ```
