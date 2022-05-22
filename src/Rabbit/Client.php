@@ -214,7 +214,7 @@ class Client implements RabbitContract
             $this->open();
         }
 
-        $this->wait();
+        $this->channel->wait();
 
         return $this;
     }
