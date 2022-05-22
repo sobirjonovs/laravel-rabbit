@@ -210,11 +210,9 @@ class Client implements RabbitContract
      */
     public function waitForever()
     {
-        if (! $this->channel->is_open()) {
-            $this->open();
-        }
+        $this->wait()->open();
 
-        $this->channel->wait();
+        return $this->waitForever();
     }
 
     /**
