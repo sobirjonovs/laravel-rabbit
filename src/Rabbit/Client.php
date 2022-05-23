@@ -17,6 +17,10 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 class Client implements RabbitContract
 {
     /**
+     * RPC timeout in seconds
+     */
+    const TIMEOUT = 20;
+    /**
      * @var AbstractChannel|AMQPChannel $channel
      */
     protected $channel;
@@ -142,7 +146,7 @@ class Client implements RabbitContract
         $this->consumeRpc($this->callback, function (AMQPMessage $message) {
             $this->result = $this->unserialize($message->getBody());
 
-            $message->ack();
+            $message->ack(true);
             $this->stopRpc();
         });
 
@@ -231,8 +235,8 @@ class Client implements RabbitContract
      */
     public function waitRpc(): Client
     {
-        while (! empty($this->getRpcChannel()->callbacks)) {
-            $this->getRpcChannel()->wait(null, false, 25);
+        while ($this->getRpcChannel()->is_open()) {
+            $this->getRpcChannel()->wait(null, false, self::TIMEOUT);
         }
 
         return $this;
@@ -314,9 +318,17 @@ class Client implements RabbitContract
     /**
      * @return bool
      */
-    public function isRpc(): bool
+    protected function isRpc(): bool
     {
         return $this->rpc === true;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isNotRpcChannelExists(): bool
+    {
+        return $this->getRpcChannel() === null;
     }
 
     /**
@@ -397,7 +409,7 @@ class Client implements RabbitContract
      * @param string $queue
      * @return Client
      */
-    public function setQueue(string $queue): Client
+    protected function setQueue(string $queue): Client
     {
         $this->getChannel()->queue_declare(
             $queue, false, true, false, false
@@ -409,7 +421,7 @@ class Client implements RabbitContract
     /**
      * @return $this
      */
-    public function setExclusiveQueue(): Client
+    protected function setExclusiveQueue(): Client
     {
         $this->callback = head($this->getRpcChannel()->queue_declare(
             '', false, false, true, false
@@ -468,16 +480,17 @@ class Client implements RabbitContract
     /**
      * @return $this
      */
-    protected function viaRpc()
+    protected function viaRpc(): Client
     {
         $this->rpc = true;
 
-        $this->resetRpc();
-
-        return $this;
+        return $this->resetRpc();
     }
 
-    public function resetRpc(): Client
+    /**
+     * @return $this
+     */
+    protected function resetRpc(): Client
     {
         $this->rpcChannel = null;
         $this->rpcConnection = null;
@@ -502,7 +515,7 @@ class Client implements RabbitContract
             'user_name' => $this->user
         ])]);
 
-        if (true === $this->rpc && $this->getRpcChannel() === null) {
+        if ($this->isRpc() && $this->isNotRpcChannelExists()) {
             $this->createRpc()->setExclusiveQueue()->setParams([
                 'reply_to' => $this->callback, 'correlation_id' => uniqid('rpc_consumer_')
             ]);
@@ -618,7 +631,9 @@ class Client implements RabbitContract
      */
     protected function authenticate(string $name)
     {
-        return auth()->guard($this->guard)->login($this->retrieveUserByName($name));
+        if ($user = $this->retrieveUserByName($name)) {
+            return auth()->guard($this->guard)->login($user);
+        }
     }
 
     /**
