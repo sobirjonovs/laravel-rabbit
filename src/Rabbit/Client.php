@@ -2,17 +2,17 @@
 
 namespace App\Rabbitmq\Rabbit;
 
-use App\Rabbitmq\Contracts\RabbitContract;
 use Closure;
-use ErrorException;
+use Rabbitmq;
 use Exception;
+use ErrorException;
+use PhpAmqpLib\Wire\AMQPTable;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Channel\AMQPChannel;
 use Illuminate\Database\Eloquent\Model;
 use PhpAmqpLib\Channel\AbstractChannel;
-use PhpAmqpLib\Channel\AMQPChannel;
+use App\Rabbitmq\Contracts\RabbitContract;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPTable;
-use Rabbitmq;
 
 class Client implements RabbitContract
 {
@@ -142,7 +142,7 @@ class Client implements RabbitContract
         $this->consumeRpc($this->callback, function (AMQPMessage $message) {
             $this->result = $this->unserialize($message->getBody());
 
-            $message->ack(true);
+            $message->ack();
             $this->stopRpc();
         });
 
@@ -162,7 +162,7 @@ class Client implements RabbitContract
 
         $this->getChannel()->basic_consume(
             $queue,
-            uniqid('consumer_'),
+            '',
             false,
             false,
             false,
@@ -184,9 +184,9 @@ class Client implements RabbitContract
 
         $this->getRpcChannel()->basic_consume(
             $queue,
-            uniqid("rpc_consumer_"),
+            uniqid('rpc_'),
             false,
-            false,
+            true,
             false,
             false,
             $callback
@@ -231,8 +231,8 @@ class Client implements RabbitContract
      */
     public function waitRpc(): Client
     {
-        while ($this->getRpcChannel()->is_open()) {
-            $this->getRpcChannel()->wait();
+        while (! empty($this->getRpcChannel()->callbacks)) {
+            $this->getRpcChannel()->wait(null, false, 25);
         }
 
         return $this;
@@ -472,6 +472,16 @@ class Client implements RabbitContract
     {
         $this->rpc = true;
 
+        $this->resetRpc();
+
+        return $this;
+    }
+
+    public function resetRpc(): Client
+    {
+        $this->rpcChannel = null;
+        $this->rpcConnection = null;
+
         return $this;
     }
 
@@ -494,7 +504,7 @@ class Client implements RabbitContract
 
         if (true === $this->rpc && $this->getRpcChannel() === null) {
             $this->createRpc()->setExclusiveQueue()->setParams([
-                'reply_to' => $this->callback, 'correlation_id' => uniqid('corr_')
+                'reply_to' => $this->callback, 'correlation_id' => uniqid('rpc_consumer_')
             ]);
         }
 
@@ -550,7 +560,7 @@ class Client implements RabbitContract
      */
     public function createRpc(): Client
     {
-        $this->rpcConnection = app(AMQPStreamConnection::class);
+        $this->rpcConnection = app('amqp');
         $this->rpcChannel = $this->rpcConnection->channel();
 
         return $this;
