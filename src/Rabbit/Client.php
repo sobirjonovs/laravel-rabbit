@@ -101,6 +101,17 @@ class Client implements RabbitContract
     protected $authorize = false;
 
     /**
+     * It can be multiple queue by default. It means, the default queue can be multiplied by 10.
+     * Ex: default queue is hello-world and it can be multiplied by 10:
+     * hello-world_0
+     * hello-world_1
+     * hello_world..
+     * hello_world_9
+     * @var bool $isMultiQueue
+     */
+    private bool $isMultiQueue = true;
+
+    /**
      * @param AMQPStreamConnection $client
      * @throws Exception
      */
@@ -326,6 +337,14 @@ class Client implements RabbitContract
     /**
      * @return bool
      */
+    protected function isMultiQueue(): bool
+    {
+        return $this->isMultiQueue === true;
+    }
+
+    /**
+     * @return bool
+     */
     protected function isNotRpcChannelExists(): bool
     {
         return $this->getRpcChannel() === null;
@@ -401,6 +420,26 @@ class Client implements RabbitContract
     public function disableAuthentication(): Client
     {
         $this->authorize = false;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function enableMultiQueue(): Client
+    {
+        $this->isMultiQueue = true;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function disableMultiQueue(): Client
+    {
+        $this->isMultiQueue = false;
 
         return $this;
     }
@@ -509,7 +548,7 @@ class Client implements RabbitContract
     /**
      * @return $this
      */
-    protected function configure()
+    protected function configure(): Client
     {
         $this->setParams(['application_headers' => new AMQPTable([
             'user_name' => $this->user
@@ -539,7 +578,7 @@ class Client implements RabbitContract
      * @param string $name
      * @return $this
      */
-    public function setUser(string $name)
+    public function setUser(string $name): Client
     {
         $this->user = $name;
 
@@ -550,7 +589,7 @@ class Client implements RabbitContract
      * @param string $name
      * @return $this
      */
-    public function setColumn(string $name)
+    public function setColumn(string $name): Client
     {
         $this->column = $name;
 
@@ -561,7 +600,7 @@ class Client implements RabbitContract
      * @param string $name
      * @return $this
      */
-    public function setGuard(string $name = null)
+    public function setGuard(string $name = null): Client
     {
         $this->guard = $guard ?? config('auth.defaults.guard');
 
@@ -580,12 +619,11 @@ class Client implements RabbitContract
     }
 
     /**
-     * @return string
      * @throws Exception
      */
-    public function getDefaultQueue(bool $multi = true): string
+    public function getDefaultQueue(): string
     {
-        if ($multi) {
+        if ($this->isMultiQueue()) {
             return $this->defaultQueue . '_' . substr(floor(microtime(true) * 1000), -1, 1);
         }
 
