@@ -144,9 +144,7 @@ class Client implements RabbitContract
      */
     public function request(string $queue = null): Client
     {
-        if ($queue === null) {
-            $queue = $this->getDefaultQueue();
-        }
+        $queue = $this->getQueue($queue);
 
         if (blank($queue)) {
             throw new Exception("Default queue or queue is not defined");
@@ -621,13 +619,15 @@ class Client implements RabbitContract
     /**
      * @throws Exception
      */
-    public function getDefaultQueue(): string
+    public function getQueue(string $queue = null): string
     {
+        $queue = $queue ?? $this->defaultQueue;
+
         if ($this->isMultiQueue()) {
-            return $this->defaultQueue . '_' . substr(floor(microtime(true) * 1000), -1, 1);
+            return $queue . '_' . substr(floor(microtime(true) * 1000), -1, 1);
         }
 
-        return $this->defaultQueue;
+        return $queue;
     }
 
     /**
