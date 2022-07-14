@@ -144,12 +144,6 @@ class Client implements RabbitContract
      */
     public function request(string $queue = null): Client
     {
-        $queue = $this->getQueue($queue);
-
-        if (blank($queue)) {
-            throw new Exception("Default queue or queue is not defined");
-        }
-
         $this->viaRpc()->publish($queue);
 
         $this->consumeRpc($this->callback, function (AMQPMessage $message) {
@@ -256,6 +250,7 @@ class Client implements RabbitContract
     /**
      * @param AMQPMessage $message
      * @return void
+     * @throws Exception
      */
     public function dispatchEvents(AMQPMessage $message)
     {
@@ -275,6 +270,7 @@ class Client implements RabbitContract
 
         if ($message->has('reply_to') && $message->has('correlation_id')) {
             $this->viaRpc()
+                ->disableMultiQueue()
                 ->setChannel($message->getChannel())
                 ->setParams(['correlation_id' => $message->get('correlation_id')])
                 ->setMessage($result)
@@ -624,6 +620,10 @@ class Client implements RabbitContract
     public function getQueue(string $queue = null): string
     {
         $queue = $queue ?? $this->defaultQueue;
+
+        if (blank($queue)) {
+            throw new Exception("Default queue or queue is not defined");
+        }
 
         if ($this->isMultiQueue()) {
             return $queue . '_' . substr(floor(microtime(true) * 1000), -1, 1);
