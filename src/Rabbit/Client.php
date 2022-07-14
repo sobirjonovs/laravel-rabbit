@@ -209,12 +209,14 @@ class Client implements RabbitContract
     }
 
     /**
-     * @param string $queue
+     * @param string|null $queue
      * @param string $exchange
      * @return $this
+     * @throws Exception
      */
-    public function publish(string $queue, string $exchange = ''): Client
+    public function publish(string $queue = null, string $exchange = ''): Client
     {
+        $queue = $this->getQueue($queue);
         $message = $this->getMessage();
         $channel = $this->getChannel();
 
