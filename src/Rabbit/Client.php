@@ -249,10 +249,10 @@ class Client implements RabbitContract
 
     /**
      * @param AMQPMessage $message
-     * @return void
+     * @return Client
      * @throws Exception
      */
-    public function dispatchEvents(AMQPMessage $message)
+    public function dispatchEvents(AMQPMessage $message): Client
     {
         /**
          * @var array $data
@@ -268,14 +268,22 @@ class Client implements RabbitContract
             data_get($data, 'params', [])
         );
 
-        if ($message->has('reply_to') && $message->has('correlation_id')) {
-            $this->viaRpc()
-                ->disableMultiQueue()
-                ->setChannel($message->getChannel())
-                ->setParams(['correlation_id' => $message->get('correlation_id')])
-                ->setMessage($result)
-                ->publish($message->get('reply_to'));
+        if (!($message->has('reply_to') && $message->has('correlation_id'))) {
+            return $this;
         }
+
+        $client = $this->viaRpc()
+            ->setChannel($message->getChannel())
+            ->setParams(['correlation_id' => $message->get('correlation_id')])
+            ->setMessage($result);
+
+        if ($this->isMultiQueue()) {
+            return $client->disableMultiQueue()
+                ->publish($message->get('reply_to'))
+                ->enableMultiQueue();
+        }
+
+        return $client->publish($message->get('reply_to'));
     }
 
     /**
