@@ -454,6 +454,19 @@ class Client implements RabbitContract
      */
     protected function setQueue(string $queue): Client
     {
+        if ($this->isMultiQueue()) {
+            return $this->queueDeclare($this->generateMultiQueue($queue));
+        }
+
+        return $this->queueDeclare($queue);
+    }
+
+    /**
+     * @param string $queue
+     * @return $this
+     */
+    private function queueDeclare(string $queue): Client
+    {
         $this->getChannel()->queue_declare(
             $queue, false, true, false, false
         );
@@ -634,10 +647,19 @@ class Client implements RabbitContract
         }
 
         if ($this->isMultiQueue()) {
-            return $queue . '_' . substr(floor(microtime(true) * 1000), -1, 1);
+            return $this->generateMultiQueue($queue);
         }
 
         return $queue;
+    }
+
+    /**
+     * @param string $queue
+     * @return string
+     */
+    private function generateMultiQueue(string $queue): string
+    {
+        return $queue . '_' . substr(floor(microtime(true) * 1000), -1, 1);
     }
 
     /**
