@@ -11,6 +11,6 @@ if (! function_exists('isJson')) {
             return false;
         }
 
-        return (bool) preg_match('/^({.+})|(\[{.+}])$/', $data);
+        return (bool) preg_match('/^({.+})|(\[{.+}])|(\[.*])$/', $data);
     }
 }
