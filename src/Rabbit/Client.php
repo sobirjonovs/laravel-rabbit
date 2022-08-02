@@ -20,6 +20,8 @@ class Client implements RabbitContract
      * RPC timeout in seconds
      */
     const TIMEOUT = 20;
+    const QUEUE_FROM = 0;
+    const QUEUE_TO = 9;
     /**
      * @var AbstractChannel|AMQPChannel $channel
      */
@@ -455,7 +457,11 @@ class Client implements RabbitContract
     protected function setQueue(string $queue): Client
     {
         if ($this->isMultiQueue()) {
-            return $this->queueDeclare($this->generateMultiQueue($queue));
+            foreach (range(self::QUEUE_FROM, self::QUEUE_TO) as $proc_num) {
+                $this->queueDeclare($queue . '_' . $proc_num);
+            }
+
+            return $this;
         }
 
         return $this->queueDeclare($queue);
