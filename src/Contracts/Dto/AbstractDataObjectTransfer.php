@@ -2,6 +2,7 @@
 
 namespace App\Rabbitmq\Contracts\Dto;
 
+use Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -97,7 +98,9 @@ abstract class AbstractDataObjectTransfer implements DtoInterface
      */
     protected function validate()
     {
-        $this->validator = validator()->make($this->toArray(), $this->rules);
+        $fields = Arr::undot(array_keys($this->rules));
+
+        $this->validator = validator()->make($this->object->only($fields), $this->rules);
 
         if (! empty($this->rules) && $this->validator->fails()) {
             throw new ValidationException($this->validator);
