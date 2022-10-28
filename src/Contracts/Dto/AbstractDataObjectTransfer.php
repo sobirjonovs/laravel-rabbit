@@ -100,7 +100,7 @@ abstract class AbstractDataObjectTransfer implements DtoInterface
     {
         $fields = Arr::undot(array_keys($this->rules));
 
-        $this->validator = validator()->make($this->object->only($fields), $this->rules);
+        $this->validator = validator()->make($this->object->only($fields)->toArray(), $this->rules);
 
         if (! empty($this->rules) && $this->validator->fails()) {
             throw new ValidationException($this->validator);
