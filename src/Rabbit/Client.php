@@ -16,10 +16,6 @@ use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 class Client implements RabbitContract
 {
-    /**
-     * RPC timeout in seconds
-     */
-    const TIMEOUT = 20;
     const QUEUE_FROM = 0;
     const QUEUE_TO = 9;
     /**
@@ -243,7 +239,7 @@ class Client implements RabbitContract
     public function waitRpc(): Client
     {
         while ($this->getRpcChannel()->is_open()) {
-            $this->getRpcChannel()->wait(null, false, self::TIMEOUT);
+            $this->getRpcChannel()->wait(null, false, config('amqp.channel_rpc_timeout'));
         }
 
         return $this;
