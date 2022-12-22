@@ -257,6 +257,8 @@ class Client implements RabbitContract
          */
         $data = $this->unserialize($message->getBody());
 
+        app()->setLocale($this->extract('lang', $message));
+
         if ($this->shouldAuthenticate()) {
             $this->authenticate($this->extract('user_name', $message));
         }
@@ -570,7 +572,8 @@ class Client implements RabbitContract
     protected function configure(): Client
     {
         $this->setParams(['application_headers' => new AMQPTable([
-            'user_name' => $this->user
+            'user_name' => $this->user,
+            'lang' => request()->getPreferredLanguage() ?? config('app.locale')
         ])]);
 
         if ($this->isRpc() && $this->isNotRpcChannelExists()) {
