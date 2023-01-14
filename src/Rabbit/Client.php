@@ -519,11 +519,24 @@ class Client implements RabbitContract
      */
     public function unserialize($message)
     {
-        if (isJson($message)) {
+        if ($this->isJson($message)) {
             return json_decode($message, true);
         }
 
         return $message;
+    }
+
+    /**
+     * @param $data
+     * @return bool|false
+     */
+    private function isJson($data): bool
+    {
+        if (is_array($data)) {
+            return false;
+        }
+
+        return (bool) preg_match('/^({.+})|(\[{.+}])|(\[.*])$/', $data);
     }
 
     /**
