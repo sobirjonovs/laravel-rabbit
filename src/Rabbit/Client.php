@@ -238,7 +238,9 @@ class Client implements RabbitContract
      */
     public function waitRpc(): Client
     {
-        while ($this->getRpcChannel()->is_open()) {
+        $channel = $this->getRpcChannel();
+
+        while ($channel->is_consuming()) {
             $this->getRpcChannel()->wait(null, false, config('amqp.channel_rpc_timeout'));
         }
 
