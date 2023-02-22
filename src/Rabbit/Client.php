@@ -142,7 +142,7 @@ class Client implements RabbitContract
      */
     public function request(string $queue = null): Client
     {
-        $this->viaRpc()->publish($queue);
+        $this->viaRpc()->publish($queue)->disableRpc();
 
         $this->consumeRpc($this->callback, function (AMQPMessage $message) {
             $this->result = $this->unserialize($message->getBody());
