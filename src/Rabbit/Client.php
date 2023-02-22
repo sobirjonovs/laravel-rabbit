@@ -248,6 +248,16 @@ class Client implements RabbitContract
     }
 
     /**
+     * @return $this
+     */
+    public function disableRpc(): Client
+    {
+        $this->rpc = false;
+
+        return $this->resetRpc();
+    }
+
+    /**
      * @param AMQPMessage $message
      * @return Client
      * @throws Exception
@@ -285,7 +295,7 @@ class Client implements RabbitContract
                 ->enableMultiQueue();
         }
 
-        return $client->publish($message->get('reply_to'));
+        return $client->publish($message->get('reply_to'))->disableRpc();
     }
 
     /**
