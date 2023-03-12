@@ -110,6 +110,11 @@ class Client implements RabbitContract
     private bool $isMultiQueue = true;
 
     /**
+     * @var string $correlation_id
+     */
+    private string $correlation_id = '';
+
+    /**
      * @param AMQPStreamConnection $client
      * @throws Exception
      */
@@ -145,15 +150,18 @@ class Client implements RabbitContract
         $this->viaRpc()->publish($queue);
 
         $this->consumeRpc($this->callback, function (AMQPMessage $message) {
+            if ($this->correlation_id !== $message->get('correlation_id')) {
+                return;
+            }
+
             $this->result = $this->unserialize($message->getBody());
 
             $message->ack(true);
+
             $this->stopRpc();
         });
 
-        $this->waitRpc();
-
-        return $this->disableRpc();
+        return $this->waitRpc();
     }
 
     /**
@@ -183,13 +191,13 @@ class Client implements RabbitContract
      * @param Closure $callback
      * @return $this
      */
-    public function consumeRpc(string $queue, Closure $callback): Client
+    public function  consumeRpc(string $queue, Closure $callback): Client
     {
         $callback = $callback->bindTo($this, get_class($this));
 
         $this->getRpcChannel()->basic_consume(
             $queue,
-            uniqid('rpc_'),
+            '',
             false,
             true,
             false,
@@ -235,20 +243,22 @@ class Client implements RabbitContract
 
     /**
      * @return $this
+     * @throws Exception
      */
     public function waitRpc(): Client
     {
         $channel = $this->getRpcChannel();
 
-        while ($channel->is_consuming()) {
-            $this->getRpcChannel()->wait(null, false, config('amqp.channel_rpc_timeout'));
+        while ($channel->is_open()) {
+            $channel->wait(null, false, config('amqp.channel_rpc_timeout'));
         }
 
-        return $this;
+        return $this->stopRpc()->disableRpc();
     }
 
     /**
      * @return $this
+     * @throws Exception
      */
     public function disableRpc(): Client
     {
@@ -336,8 +346,8 @@ class Client implements RabbitContract
      */
     public function stopRpc(): Client
     {
-        $this->getRpcConnection()->close();
-        $this->getRpcChannel()->close();
+        optional($this->getRpcConnection())->close();
+        optional($this->getRpcChannel())->close();
 
         return $this;
     }
@@ -564,6 +574,7 @@ class Client implements RabbitContract
 
     /**
      * @return $this
+     * @throws Exception
      */
     protected function viaRpc(): Client
     {
@@ -574,6 +585,7 @@ class Client implements RabbitContract
 
     /**
      * @return $this
+     * @throws Exception
      */
     protected function resetRpc(): Client
     {
@@ -601,9 +613,11 @@ class Client implements RabbitContract
             'lang' => request()->getPreferredLanguage() ?? config('app.locale')
         ])]);
 
+        $this->correlation_id = uniqid('rpc_consumer_');
+
         if ($this->isRpc() && $this->isNotRpcChannelExists()) {
             $this->createRpc()->setExclusiveQueue()->setParams([
-                'reply_to' => $this->callback, 'correlation_id' => uniqid('rpc_consumer_')
+                'reply_to' => $this->callback, 'correlation_id' => $this->correlation_id
             ]);
         }
 
