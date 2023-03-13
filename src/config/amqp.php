@@ -19,5 +19,9 @@ return [
     'context' => null,
     'heartbeat' => 0,
     'keepalive' => true,
-    'channel_rpc_timeout' => 30
+    'channel_rpc_timeout' => 30,
+
+    // Default device name
+    'default_device' => 'mobile',
+    'device_parameter_name' => '_x_device'
 ];

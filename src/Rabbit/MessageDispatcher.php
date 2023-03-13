@@ -49,6 +49,8 @@ class MessageDispatcher
 
             if (null !== $dto) {
                 $data['object'] = $this->app->make($dto, ['parameters' => $parameters]);
+            } else {
+                $data = $parameters;
             }
 
             $callback = [$this->app->make(data_get($method, 'class')), data_get($method, 'method')];

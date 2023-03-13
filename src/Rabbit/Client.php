@@ -191,7 +191,7 @@ class Client implements RabbitContract
      * @param Closure $callback
      * @return $this
      */
-    public function  consumeRpc(string $queue, Closure $callback): Client
+    public function consumeRpc(string $queue, Closure $callback): Client
     {
         $callback = $callback->bindTo($this, get_class($this));
 
@@ -287,7 +287,7 @@ class Client implements RabbitContract
 
         $result = Rabbitmq::dispatch(
             data_get($data, 'method', 'default'),
-            data_get($data, 'params', [])
+            array_merge(data_get($data, 'params', []), [config('amqp.device_parameter_name') => $this->extract('device', $message)])
         );
 
         if (!($message->has('reply_to') && $message->has('correlation_id'))) {
@@ -377,8 +377,8 @@ class Client implements RabbitContract
     }
 
     /**
-     * @deprecated
      * @return $this
+     * @deprecated
      */
     public function open(): Client
     {
@@ -558,7 +558,7 @@ class Client implements RabbitContract
             return false;
         }
 
-        return (bool) preg_match('/^({.+})|(\[{.+}])|(\[.*])$/', $data);
+        return (bool)preg_match('/^({.+})|(\[{.+}])|(\[.*])$/', $data);
     }
 
     /**
@@ -608,10 +608,13 @@ class Client implements RabbitContract
      */
     protected function configure(): Client
     {
-        $this->setParams(['application_headers' => new AMQPTable([
-            'user_name' => $this->user,
-            'lang' => request()->getPreferredLanguage() ?? config('app.locale')
-        ])]);
+        $this->setParams([
+            'application_headers' => new AMQPTable([
+                'user_name' => $this->user,
+                'lang' => request()->getPreferredLanguage() ?? config('app.locale'),
+                'device' => request()->header('X-Type', config('amqp.default_device'))
+            ])
+        ]);
 
         $this->correlation_id = uniqid('rpc_consumer_');
 
@@ -737,7 +740,7 @@ class Client implements RabbitContract
     {
         $column = ucfirst(strtolower($this->column));
 
-        return $this->getModel()->{ 'where' . $column }($name)->first();
+        return $this->getModel()->{'where' . $column}($name)->first();
     }
 
     /**
