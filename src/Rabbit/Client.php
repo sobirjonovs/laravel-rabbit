@@ -2,6 +2,7 @@
 
 namespace App\Rabbitmq\Rabbit;
 
+use App\Rabbitmq\FailedJob\Contract\FailedJobHandlerInterface;
 use Closure;
 use Rabbitmq;
 use Exception;
@@ -216,17 +217,37 @@ class Client implements RabbitContract
      */
     public function publish(string $queue = null, string $exchange = ''): Client
     {
-        $queue = $this->getQueue($queue);
-        $message = $this->getMessage();
-        $channel = $this->getChannel();
+        try {
+            $queue = $this->getQueue($queue);
+            $message = $this->getMessage();
+            $channel = $this->getChannel();
 
-        if ($this->isRpc()) {
-            $channel = $this->getRpcChannel();
+            if ($this->isRpc()) {
+                $channel = $this->getRpcChannel();
+            }
+
+            $channel->basic_publish($message, $exchange, $queue);
+
+        } catch (Exception $e) {
+            $this->getFailedJobHandler()->write([
+                "queue" => $this->getQueue($queue),
+                "message" => $this->getMessage(),
+                "channel" => $this->getChannel(),
+                "exception" => $e->getMessage()
+            ]);
+            throw $e;
         }
 
-        $channel->basic_publish($message, $exchange, $queue);
-
         return $this;
+    }
+
+    /**
+     * @return FailedJobHandlerInterface
+     */
+    private function getFailedJobHandler(): FailedJobHandlerInterface
+    {
+        $handler = config("amqp.failed_job_handler");
+        return new $handler;
     }
 
     /**

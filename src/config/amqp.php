@@ -1,5 +1,7 @@
 <?php
 
+use App\Rabbitmq\FailedJob\FailedJobHandlerToFile;
+
 return [
     'host' => env('AMQP_HOST', 'host.docker.internal'),
     'port' => env('AMQP_PORT', 5672),
@@ -20,7 +22,7 @@ return [
     'heartbeat' => 0,
     'keepalive' => true,
     'channel_rpc_timeout' => 30,
-
+    "failed_job_handler" => FailedJobHandlerToFile::class,
     // Default device name
     'default_device' => 'mobile',
     'device_parameter_name' => '_x_device'

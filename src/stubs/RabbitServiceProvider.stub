@@ -6,6 +6,8 @@ use App\Rabbitmq\Rabbit\Client;
 use App\Rabbitmq\Rabbit\MessageDispatcher;
 use Illuminate\Support\ServiceProvider;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use App\Rabbitmq\FailedJob\Contract\FailedJobHandlerInterface;
+use App\Rabbitmq\FailedJob\FailedJobHandlerToFile;
 
 class RabbitServiceProvider extends ServiceProvider
 {
@@ -14,6 +16,8 @@ class RabbitServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->bind(FailedJobHandlerInterface::class, FailedJobHandlerToFile::class);
+
         $this->app->singleton(AMQPStreamConnection::class, function () {
             return new AMQPStreamConnection(
                 config('amqp.host'),

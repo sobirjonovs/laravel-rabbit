@@ -13,6 +13,7 @@ class RabbitServiceProvider extends ServiceProvider
     {
         $configPath = __DIR__ . '/../config/';
         $providerPath = __DIR__ . '/../stubs/';
+        $commandPath = __DIR__ . '/../command/';
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
@@ -24,6 +25,10 @@ class RabbitServiceProvider extends ServiceProvider
             $this->publishes([
                 $providerPath . 'RabbitServiceProvider.stub' => app_path('Providers/RabbitServiceProvider.php')
             ], 'rabbit-providers');
+
+            $this->publishes([
+                $commandPath . 'RunFailedRabbitJobCommand.php' => app_path('Console/Commands/RunFailedRabbitJobCommand.php')
+            ], 'rabbit-commands');
         }
     }
 }
