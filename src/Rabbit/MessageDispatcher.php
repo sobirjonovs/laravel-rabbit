@@ -3,10 +3,9 @@
 namespace App\Rabbitmq\Rabbit;
 
 use Log;
-use Exception;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\Container\BindingResolutionException;
+use Throwable;
 
 class MessageDispatcher
 {
@@ -61,7 +60,7 @@ class MessageDispatcher
                 'success' => false,
                 'message' => $validationException->errors()
             ];
-        } catch (BindingResolutionException|Exception $exception) {
+        } catch (Throwable $exception) {
             return [
                 'success' => false,
                 'message' => $exception->getMessage()
