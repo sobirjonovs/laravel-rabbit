@@ -5,7 +5,9 @@ namespace App\Rabbitmq\Rabbit;
 use Closure;
 use Rabbitmq;
 use Exception;
+use Throwable;
 use ErrorException;
+use Illuminate\Support\Arr;
 use PhpAmqpLib\Wire\AMQPTable;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Channel\AMQPChannel;
@@ -37,11 +39,6 @@ class Client implements RabbitContract
      * @var AMQPStreamConnection $connection
      */
     protected $connection;
-
-    /**
-     * @var AMQPStreamConnection $rpcConnection
-     */
-    protected $rpcConnection;
 
     /**
      * @var string|array $result
@@ -155,10 +152,6 @@ class Client implements RabbitContract
             }
 
             $this->result = $this->unserialize($message->getBody());
-
-            $message->ack(true);
-
-            $this->stopRpc();
         });
 
         return $this->waitRpc();
@@ -195,7 +188,7 @@ class Client implements RabbitContract
     {
         $callback = $callback->bindTo($this, get_class($this));
 
-        $this->getRpcChannel()->basic_consume(
+        $this->getChannel()->basic_consume(
             $queue,
             '',
             false,
@@ -220,10 +213,6 @@ class Client implements RabbitContract
         $message = $this->getMessage();
         $channel = $this->getChannel();
 
-        if ($this->isRpc()) {
-            $channel = $this->getRpcChannel();
-        }
-
         $channel->basic_publish($message, $exchange, $queue);
 
         return $this;
@@ -234,9 +223,14 @@ class Client implements RabbitContract
      */
     public function wait(): Client
     {
-        while ($this->getChannel()->is_open()) {
-            $this->getChannel()->wait();
+        $channel = $this->getChannel();
+
+        while ($channel->is_open()) {
+            $channel->wait();
         }
+
+        $channel->close();
+        $this->getConnection()->close();
 
         return $this;
     }
@@ -247,13 +241,17 @@ class Client implements RabbitContract
      */
     public function waitRpc(): Client
     {
-        $channel = $this->getRpcChannel();
+        try {
+            if (! $this->result) {
+                $this->getChannel()->wait(null, false, config('amqp.channel_rpc_timeout'));
+            }
 
-        while ($channel->is_open()) {
-            $channel->wait(null, false, config('amqp.channel_rpc_timeout'));
+            $this->getChannel()->close();
+
+            return $this;
+        } catch (Throwable $throwable) {
+            throw new Exception('Service is not responding');
         }
-
-        return $this->stopRpc()->disableRpc();
     }
 
     /**
@@ -264,7 +262,7 @@ class Client implements RabbitContract
     {
         $this->rpc = false;
 
-        return $this->resetRpc();
+        return $this;
     }
 
     /**
@@ -274,38 +272,48 @@ class Client implements RabbitContract
      */
     public function dispatchEvents(AMQPMessage $message): Client
     {
-        /**
-         * @var array $data
-         */
-        $data = $this->unserialize($message->getBody());
+        try {
+            /**
+             * @var array $data
+             */
+            $data = $this->unserialize($message->getBody());
 
-        app()->setLocale($this->extract('lang', $message));
+            app()->setLocale($this->extract('lang', $message));
 
-        if ($this->shouldAuthenticate()) {
-            $this->authenticate($this->extract('user_name', $message));
+            if ($this->shouldAuthenticate()) {
+                $this->authenticate($this->extract('user_name', $message));
+            }
+
+            $result = Rabbitmq::dispatch(
+                data_get($data, 'method', 'default'),
+                array_merge(data_get($data, 'params', []), [config('amqp.device_parameter_name') => $this->extract('device', $message)])
+            );
+
+            if (!($message->has('reply_to') && $message->has('correlation_id'))) {
+                return $this;
+            }
+
+            $client = $this->viaRpc()
+                ->setChannel($message->getChannel())
+                ->setParams([
+                    'correlation_id' => $message->get('correlation_id')
+                ])
+                ->setMessage($result);
+
+            if ($this->isMultiQueue()) {
+                $client = $client->disableMultiQueue()
+                    ->publish($message->get('reply_to'))
+                    ->enableMultiQueue();
+
+                info('channel mulit', [$client->getChannel()]);
+
+                return $client;
+            }
+
+            return $client->publish($message->get('reply_to'))->disableRpc();
+        } catch (Throwable $exception) {
+            throw new Exception($exception->getMessage() ? $exception->getMessage() : 'Unknown error');
         }
-
-        $result = Rabbitmq::dispatch(
-            data_get($data, 'method', 'default'),
-            array_merge(data_get($data, 'params', []), [config('amqp.device_parameter_name') => $this->extract('device', $message)])
-        );
-
-        if (!($message->has('reply_to') && $message->has('correlation_id'))) {
-            return $this;
-        }
-
-        $client = $this->viaRpc()
-            ->setChannel($message->getChannel())
-            ->setParams(['correlation_id' => $message->get('correlation_id')])
-            ->setMessage($result);
-
-        if ($this->isMultiQueue()) {
-            return $client->disableMultiQueue()
-                ->publish($message->get('reply_to'))
-                ->enableMultiQueue();
-        }
-
-        return $client->publish($message->get('reply_to'))->disableRpc();
     }
 
     /**
@@ -319,37 +327,17 @@ class Client implements RabbitContract
     /**
      * @return AMQPChannel|null
      */
-    public function getChannel(): ?AMQPChannel
+    public function  getChannel(): ?AMQPChannel
     {
+        if ($this->isRpc()) {
+            if (! $this->rpcChannel) {
+                $this->setChannel(new AMQPChannel($this->getConnection()));
+            }
+
+            return $this->rpcChannel;
+        }
+
         return $this->channel;
-    }
-
-    /**
-     * @return AMQPChannel|null
-     */
-    public function getRpcChannel(): ?AMQPChannel
-    {
-        return $this->rpcChannel;
-    }
-
-    /**
-     * @return AMQPStreamConnection|null
-     */
-    public function getRpcConnection(): ?AMQPStreamConnection
-    {
-        return $this->rpcConnection;
-    }
-
-    /**
-     * @return $this
-     * @throws Exception
-     */
-    public function stopRpc(): Client
-    {
-        optional($this->getRpcConnection())->close();
-        optional($this->getRpcChannel())->close();
-
-        return $this;
     }
 
     /**
@@ -366,14 +354,6 @@ class Client implements RabbitContract
     protected function isMultiQueue(): bool
     {
         return $this->isMultiQueue === true;
-    }
-
-    /**
-     * @return bool
-     */
-    protected function isNotRpcChannelExists(): bool
-    {
-        return $this->getRpcChannel() === null;
     }
 
     /**
@@ -505,7 +485,7 @@ class Client implements RabbitContract
      */
     protected function setExclusiveQueue(): Client
     {
-        $this->callback = head($this->getRpcChannel()->queue_declare(
+        $this->callback = head($this->getChannel()->queue_declare(
             '', false, false, true, false
         ));
 
@@ -580,18 +560,6 @@ class Client implements RabbitContract
     {
         $this->rpc = true;
 
-        return $this->resetRpc();
-    }
-
-    /**
-     * @return $this
-     * @throws Exception
-     */
-    protected function resetRpc(): Client
-    {
-        $this->rpcChannel = null;
-        $this->rpcConnection = null;
-
         return $this;
     }
 
@@ -616,10 +584,10 @@ class Client implements RabbitContract
             ])
         ]);
 
-        $this->correlation_id = uniqid('rpc_consumer_');
+        $this->correlation_id = data_get($this->getParams(), 'correlation_id', uniqid('rpc_consumer_'));
 
-        if ($this->isRpc() && $this->isNotRpcChannelExists()) {
-            $this->createRpc()->setExclusiveQueue()->setParams([
+        if ($this->isRpc() && ! isset($this->params['correlation_id'])) {
+            $this->setExclusiveQueue()->setParams([
                 'reply_to' => $this->callback, 'correlation_id' => $this->correlation_id
             ]);
         }
@@ -667,17 +635,6 @@ class Client implements RabbitContract
     public function setGuard(string $name = null): Client
     {
         $this->guard = $guard ?? config('auth.defaults.guard');
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function createRpc(): Client
-    {
-        $this->rpcConnection = app('amqp');
-        $this->rpcChannel = $this->rpcConnection->channel();
 
         return $this;
     }
