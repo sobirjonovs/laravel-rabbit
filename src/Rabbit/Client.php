@@ -246,8 +246,6 @@ class Client implements RabbitContract
                 $this->getChannel()->wait(null, false, config('amqp.channel_rpc_timeout'));
             }
 
-            $this->getChannel()->close();
-
             return $this;
         } catch (Throwable $throwable) {
             throw new Exception('Service is not responding');
