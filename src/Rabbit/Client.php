@@ -299,13 +299,9 @@ class Client implements RabbitContract
                 ->setMessage($result);
 
             if ($this->isMultiQueue()) {
-                $client = $client->disableMultiQueue()
+                return $client->disableMultiQueue()
                     ->publish($message->get('reply_to'))
                     ->enableMultiQueue();
-
-                info('channel mulit', [$client->getChannel()]);
-
-                return $client;
             }
 
             return $client->publish($message->get('reply_to'))->disableRpc();
