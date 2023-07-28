@@ -146,8 +146,10 @@ class Client implements RabbitContract
     {
         $this->viaRpc()->publish($queue);
 
-        $this->consumeRpc($this->callback, function (AMQPMessage $message) {
-            if ($this->correlation_id !== $message->get('correlation_id')) {
+        $correlation_id = $this->correlation_id;
+
+        $this->consumeRpc($this->callback, function (AMQPMessage $message) use ($correlation_id) {
+            if ($correlation_id !== $message->get('correlation_id')) {
                 return;
             }
 
@@ -299,12 +301,20 @@ class Client implements RabbitContract
                 ->setMessage($result);
 
             if ($this->isMultiQueue()) {
-                return $client->disableMultiQueue()
+                $client = $client->disableMultiQueue()
                     ->publish($message->get('reply_to'))
                     ->enableMultiQueue();
+
+                $message->getChannel()->close();
+
+                return $client;
             }
 
-            return $client->publish($message->get('reply_to'))->disableRpc();
+            $client = $client->publish($message->get('reply_to'))->disableRpc();
+
+            $message->getChannel()->close();
+
+            return $client;
         } catch (Throwable $exception) {
             throw new Exception($exception->getMessage() ? $exception->getMessage() : 'Unknown error');
         }
@@ -532,7 +542,7 @@ class Client implements RabbitContract
             return false;
         }
 
-        return (bool)preg_match('/^({.+})|(\[{.+}])|(\[.*])$/', $data);
+        return (bool) preg_match('/^({.+})|(\[{.+}])|(\[.*])$/', $data);
     }
 
     /**
