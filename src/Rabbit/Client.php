@@ -5,6 +5,7 @@ namespace App\Rabbitmq\Rabbit;
 use Closure;
 use Rabbitmq;
 use Exception;
+use Throwable;
 use ErrorException;
 use PhpAmqpLib\Wire\AMQPTable;
 use PhpAmqpLib\Message\AMQPMessage;
