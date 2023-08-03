@@ -148,9 +148,18 @@ class Client implements RabbitContract
      */
     public function request(string $queue = null): Client
     {
+        info('------- BEGIN RPC REQUEST -------');
         $this->viaRpc()->publish($queue);
+        info('0. params', [$this->getParams()]);
+        info('1. via rpc', [$this->isRpc()]);
+        info('2. rpc channel', [$this->getRpcChannel()]);
+        info('3. channel', [$this->getChannel()]);
+        info('4. queue', [$queue]);
+        info('5. callback queue', [$this->callback]);
+        info('6. correlation id', [$this->correlation_id]);
 
         $this->consumeRpc($this->callback, function (AMQPMessage $message) {
+            info('7. correlation id', [$this->correlation_id]);
             if ($this->correlation_id !== $message->get('correlation_id')) {
                 return;
             }
@@ -159,10 +168,18 @@ class Client implements RabbitContract
 
             $message->ack(true);
 
+            info('-6. after ack');
+
             $this->stopRpc();
         });
 
-        return $this->waitRpc();
+        info('8. after consume rpc');
+
+        $client = $this->waitRpc();
+
+        info('------- END RPC REQUEST -------');
+
+        return $client;
     }
 
     /**
@@ -248,15 +265,25 @@ class Client implements RabbitContract
      */
     public function waitRpc(): Client
     {
+        info('9. enter wait rpc');
         try {
             $channel = $this->getRpcChannel();
+            info('10. rpc channel', [$channel]);
 
             while ($channel->is_open()) {
                 $channel->wait(null, false, config('amqp.channel_rpc_timeout'));
             }
 
+            info('11. after wait rpc channel');
+
             return $this->stopRpc()->disableRpc();
         } catch (Throwable $exception) {
+            info('13. exception throwed');
+            $this->stopRpc()->disableRpc();
+            info('14. all closed');
+            info('15. exception message', [$exception->getMessage(), $exception]);
+            info('------- END DISPATCH EVENTS -------');
+
             throw new Exception('Service is not responding');
         }
     }
@@ -279,11 +306,13 @@ class Client implements RabbitContract
      */
     public function dispatchEvents(AMQPMessage $message): Client
     {
+        info('------- BEGIN DISPATCH EVENTS -------');
         try {
             /**
              * @var array $data
              */
             $data = $this->unserialize($message->getBody());
+            info('1. received data', [$data]);
 
             app()->setLocale($this->extract('lang', $message));
 
@@ -296,23 +325,46 @@ class Client implements RabbitContract
                 array_merge(data_get($data, 'params', []), [config('amqp.device_parameter_name') => $this->extract('device', $message)])
             );
 
+            info('2. after processing the message', [$result]);
+
             if (!($message->has('reply_to') && $message->has('correlation_id'))) {
+                info('3. it is not rpc', [$message->get_properties()]);
                 return $this;
             }
+
+            info('4. after if condition reply_to');
 
             $client = $this->viaRpc()
                 ->setChannel($message->getChannel())
                 ->setParams(['correlation_id' => $message->get('correlation_id')])
                 ->setMessage($result);
 
+            info('5. after setting message', [$message->get_properties()]);
+
             if ($this->isMultiQueue()) {
-                return $client->disableMultiQueue()
+                info('6. multi queue');
+
+                $client = $client->disableMultiQueue()
                     ->publish($message->get('reply_to'))
                     ->enableMultiQueue();
+
+                info('------- END DISPATCH EVENTS -------');
+
+                return $client;
             }
 
-            return $client->publish($message->get('reply_to'))->disableRpc();
+            info('7. after multiqueue condition');
+
+            $client = $client->publish($message->get('reply_to'))->disableRpc();
+
+            info('8. set a message');
+
+            info('------- END DISPATCH EVENTS -------');
+
+            return $client;
         } catch (Throwable $exception) {
+            info('9. exception message', [$exception->getMessage(), $exception]);
+            info('------- END DISPATCH EVENTS -------');
             throw new Exception($exception->getMessage() ? $exception->getMessage() : 'Unknown error');
         }
     }
@@ -357,6 +409,8 @@ class Client implements RabbitContract
     {
         optional($this->getRpcConnection())->close();
         optional($this->getRpcChannel())->close();
+
+        info('12. after close rpc connection and channel');
 
         return $this;
     }
