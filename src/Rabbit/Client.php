@@ -150,6 +150,7 @@ class Client implements RabbitContract
     {
         info('------- BEGIN RPC REQUEST -------');
         $this->viaRpc()->publish($queue);
+        info('-1. message', [$this->message]);
         info('0. params', [$this->getParams()]);
         info('1. via rpc', [$this->isRpc()]);
         info('2. rpc channel', [$this->getRpcChannel()]);
