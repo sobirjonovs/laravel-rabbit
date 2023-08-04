@@ -166,6 +166,7 @@ class Client implements RabbitContract
             }
 
             $this->result = $this->unserialize($message->getBody());
+            info('-66. income result', [$this->result]);
 
             $message->ack(true);
 
@@ -236,6 +237,7 @@ class Client implements RabbitContract
     public function publish(string $queue = null, string $exchange = ''): Client
     {
         $queue = $this->getQueue($queue);
+        info('-11. queue rpc', [$queue]);
         $message = $this->getMessage();
         $channel = $this->getChannel();
 
@@ -271,7 +273,7 @@ class Client implements RabbitContract
             $channel = $this->getRpcChannel();
             info('10. rpc channel', [$channel]);
 
-            while ($channel->is_open()) {
+            while (! $this->result) {
                 $channel->wait(null, false, config('amqp.channel_rpc_timeout'));
             }
 
