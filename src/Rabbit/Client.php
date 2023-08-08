@@ -159,7 +159,7 @@ class Client implements RabbitContract
         info('5. callback queue', [$this->callback]);
         info('6. correlation id', [$this->correlation_id]);
 
-        $this->consumeRpc($this->callback, function (AMQPMessage $message) {
+        $this->setResultNull()->consumeRpc($this->callback, function (AMQPMessage $message) {
             info('7. correlation id', [$this->correlation_id]);
             if ($this->correlation_id !== $message->get('correlation_id')) {
                 return;
@@ -562,6 +562,16 @@ class Client implements RabbitContract
         $this->getChannel()->queue_declare(
             $queue, false, true, false, false
         );
+
+        return $this;
+    }
+
+    /**
+     * @return Client
+     */
+    private function setResultNull(): Client
+    {
+        $this->result = '';
 
         return $this;
     }
