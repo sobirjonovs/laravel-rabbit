@@ -6,6 +6,7 @@ use Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Foundation\Application;
 use Throwable;
+use Exception;
 
 class MessageDispatcher
 {
