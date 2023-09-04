@@ -171,8 +171,6 @@ class Client implements RabbitContract
             $message->ack(true);
 
             info('-6. after ack');
-
-            $this->stopRpc();
         });
 
         info('8. after consume rpc');
