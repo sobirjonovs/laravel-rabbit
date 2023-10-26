@@ -2,7 +2,6 @@
 
 namespace App\Rabbitmq\Rabbit;
 
-use Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Foundation\Application;
 use Throwable;
