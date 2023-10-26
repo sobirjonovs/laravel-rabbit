@@ -2,6 +2,8 @@
 
 namespace App\Rabbitmq\Providers;
 
+use App\Rabbitmq\Console\Commands\DataObjectMakeCommand;
+use App\Rabbitmq\Console\Commands\ServiceMakeCommand;
 use Illuminate\Support\ServiceProvider;
 
 class RabbitServiceProvider extends ServiceProvider
@@ -24,6 +26,11 @@ class RabbitServiceProvider extends ServiceProvider
             $this->publishes([
                 $providerPath . 'RabbitServiceProvider.stub' => app_path('Providers/RabbitServiceProvider.php')
             ], 'rabbit-providers');
+
+            $this->commands([
+                DataObjectMakeCommand::class,
+                ServiceMakeCommand::class,
+            ]);
         }
     }
 }
