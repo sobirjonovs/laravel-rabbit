@@ -83,7 +83,7 @@ $result = $client->setMessage([
 ?>
 ```
 
-# Development
+## Development
 
 You can register your events in `config/rabbit_events.php` like that
 
@@ -115,8 +115,8 @@ This will create a new service class named `ProductService` with a function name
 It also creates DTO class which will accepted in `createProduct` function.
 
 The generated files will be located in the following directories:
-- Service class: App/Services/ProductService.php
-- Data Transfer Object (DTO): App/Services/Dto/ProductServiceObject.php
+-   Service class: App/Services/ProductService.php
+-   Data Transfer Object (DTO): App/Services/Dto/ProductServiceObject.php
 
 If you want to change namespace of service and DTO classes, you can replace them in `config/amqp.php`.
 
@@ -140,6 +140,3 @@ If you want to change namespace of service and DTO classes, you can replace them
     'dto_namespace' => 'Dto',
 ];
 ```
-
-
-

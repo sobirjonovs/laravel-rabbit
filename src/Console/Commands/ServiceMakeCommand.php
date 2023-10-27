@@ -3,11 +3,21 @@
 namespace App\Rabbitmq\Console\Commands;
 
 use Illuminate\Console\GeneratorCommand;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputArgument;
 
 class ServiceMakeCommand extends GeneratorCommand
 {
+    private Str $str;
+
+    public function __construct(Filesystem $files, Str $str)
+    {
+        parent::__construct($files);
+
+        $this->str = $str;
+    }
+
     /**
      * The console command name.
      *
@@ -69,7 +79,7 @@ class ServiceMakeCommand extends GeneratorCommand
     {
         $stub = parent::buildClass($name);
 
-        $object = Str::studly($this->argument('name'));
+        $object = $this->str->studly($this->argument('name'));
         $function = $this->argument('function');
 
         $stub = str_replace(['{{ function }}', '{{ object }}'], [$function, "{$object}Object"], $stub);
