@@ -108,7 +108,7 @@ class ServiceMakeCommand extends GeneratorCommand
 
     private function createDataObject(): void
     {
-        $object = Str::studly($this->argument('name'));
+        $object = $this->str->studly($this->argument('name'));
 
         $this->call('make:rabbit-object', ['name' => "{$object}Object"]);
     }
