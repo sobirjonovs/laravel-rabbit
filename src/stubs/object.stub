@@ -1,0 +1,13 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\Rabbitmq\Contracts\Dto\AbstractDataObjectTransfer;
+
+class {{ class }} extends AbstractDataObjectTransfer
+{
+    public function only(): array
+    {
+        return [];
+    }
+}

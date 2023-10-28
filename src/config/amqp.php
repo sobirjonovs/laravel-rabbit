@@ -23,5 +23,19 @@ return [
 
     // Default device name
     'default_device' => 'mobile',
-    'device_parameter_name' => '_x_device'
+    'device_parameter_name' => '_x_device',
+
+    /**
+     * Namespace of data service classes
+     *
+     * It will be merged to root namespace which is App/config('amqp.service_namespace')
+     */
+    'service_namespace' => 'Services',
+
+    /**
+     * Namespace of data transfer object
+     *
+     * It will be merged to root namespace which is App/config('amqp.service_namespace')/config('amqp.dto_namespace')
+     */
+    'dto_namespace' => 'Dto',
 ];

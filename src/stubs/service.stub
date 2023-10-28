@@ -1,0 +1,12 @@
+<?php
+
+namespace {{ namespace }};
+
+use App\{{ objectNamespace }};
+
+class {{ class }}
+{
+    public function {{ function }}({{ object }} $object)
+    {
+    }
+}
