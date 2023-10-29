@@ -300,31 +300,39 @@ class Client implements RabbitContract
                 data_get($data, 'method', 'default'),
                 array_merge(data_get($data, 'params', []), [config('amqp.device_parameter_name') => $this->extract('device', $message)])
             );
-
+        } catch (Throwable $exception) {
             if (!($message->has('reply_to') && $message->has('correlation_id'))) {
-                return $this;
+
+                DeadLetterHandler::toQueue($data, $exception, $this);
+            } else {
+                $result = [
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ];
             }
+        }
 
-            $client = $this->viaRpc()
-                ->setChannel($message->getChannel())
-                ->setParams(['correlation_id' => $message->get('correlation_id')])
-                ->setMessage($result);
+        if (!($message->has('reply_to') && $message->has('correlation_id'))) {
+            return $this;
+        }
 
-            if ($this->isMultiQueue()) {
+        $client = $this->viaRpc()
+            ->setChannel($message->getChannel())
+            ->setParams(['correlation_id' => $message->get('correlation_id')])
+            ->setMessage($result);
 
-                $client = $client->disableMultiQueue()
-                    ->publish($message->get('reply_to'))
-                    ->enableMultiQueue();
+        if ($this->isMultiQueue()) {
 
-                return $client;
-            }
-
-            $client = $client->publish($message->get('reply_to'))->disableRpc();
+            $client = $client->disableMultiQueue()
+                ->publish($message->get('reply_to'))
+                ->enableMultiQueue();
 
             return $client;
-        } catch (Throwable $exception) {
-            throw new Exception($exception->getMessage() ? $exception->getMessage() : 'Unknown error');
         }
+
+        $client = $client->publish($message->get('reply_to'))->disableRpc();
+
+        return $client;
     }
 
     /**
