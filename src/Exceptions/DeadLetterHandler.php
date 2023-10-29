@@ -15,7 +15,7 @@ class DeadLetterHandler
      * @param Client $client
      * @throws \Exception
      */
-    public static function toQueue(array $data, Throwable $exception, Client $client): void
+    public function toQueue(array $data, Throwable $exception, Client $client): void
     {
         $data['error'] = [
             'file' => $exception->getFile(),

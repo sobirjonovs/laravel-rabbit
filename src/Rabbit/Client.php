@@ -116,6 +116,8 @@ class Client implements RabbitContract
      */
     private string $correlation_id = '';
 
+    private DeadLetterHandler $deadLetterHandler;
+
     /**
      * @param AMQPStreamConnection $client
      * @throws Exception
@@ -124,6 +126,7 @@ class Client implements RabbitContract
     {
         $this->connection = $client;
         $this->channel = $this->connection->channel();
+        $this->deadLetterHandler = new DeadLetterHandler();
 
         $this->queueDeclare(config('amqp.dead_letter_queue'));
     }
@@ -303,7 +306,7 @@ class Client implements RabbitContract
         } catch (Throwable $exception) {
             if (!($message->has('reply_to') && $message->has('correlation_id'))) {
 
-                DeadLetterHandler::toQueue($data, $exception, $this);
+                $this->deadLetterHandler->toQueue($data, $exception, $this);
             } else {
                 $result = [
                     'success' => false,
