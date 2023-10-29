@@ -2,6 +2,7 @@
 
 namespace App\Rabbitmq\Rabbit;
 
+use App\Rabbitmq\Exceptions\DeadLetterHandler;
 use Closure;
 use Rabbitmq;
 use Exception;
@@ -123,6 +124,8 @@ class Client implements RabbitContract
     {
         $this->connection = $client;
         $this->channel = $this->connection->channel();
+
+        $this->queueDeclare(config('amqp.dead_letter_queue'));
     }
 
     /**
@@ -299,7 +302,6 @@ class Client implements RabbitContract
             );
 
             if (!($message->has('reply_to') && $message->has('correlation_id'))) {
-                info('3. it is not rpc', [$message->get_properties()]);
                 return $this;
             }
 
