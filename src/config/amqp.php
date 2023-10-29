@@ -38,4 +38,11 @@ return [
      * It will be merged to root namespace which is App/config('amqp.service_namespace')/config('amqp.dto_namespace')
      */
     'dto_namespace' => 'Dto',
+
+    /**
+     * When error is out in service class, that message will be sent to config('amqp.dead-letter-queue')
+     *
+     * This works only subscriber and publisher mode
+     */
+    'dead_letter_queue' => 'dead-letter-queue',
 ];
