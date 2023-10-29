@@ -34,7 +34,7 @@ use App\Rabbitmq\Rabbit\Client;
 use PhpAmqpLib\Message\AMQPMessage;
     
 $client = app(Client::class);
-$client->consume('queue-one', function (AMQPMessage $message) {
+$client->consume('queue-one', function (AMQPMessage $message) use ($client) {
             /**
              * Acknowledge a message
              */
@@ -43,7 +43,7 @@ $client->consume('queue-one', function (AMQPMessage $message) {
             /**
              * @var Client $this
              */
-            $this->dispatchEvents($message);
+            $client->dispatchEvents($message);
         })->wait(); // or waitForever();
 
 ?>
