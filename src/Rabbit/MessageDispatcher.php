@@ -32,6 +32,7 @@ class MessageDispatcher
      * @param string $name
      * @param array $parameters
      * @return mixed|void
+     * @throws Exception
      */
     public function dispatch(string $name, array $parameters)
     {
@@ -59,11 +60,6 @@ class MessageDispatcher
             return [
                 'success' => false,
                 'message' => $validationException->errors()
-            ];
-        } catch (Throwable $exception) {
-            return [
-                'success' => false,
-                'message' => $exception->getMessage()
             ];
         }
     }
