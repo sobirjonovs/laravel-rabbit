@@ -34,8 +34,8 @@ class RabbitMoveCommand extends Command
     public function handle(): void
     {
         $method = $this->option('method');
-        $to = $this->argument('to-queue');
-        $from = $this->argument('from-queue');
+        $toQueue = $this->argument('to-queue');
+        $fromQueue = $this->argument('from-queue');
 
         $info = [
             'total' => 0,
@@ -44,7 +44,7 @@ class RabbitMoveCommand extends Command
 
         $channel = $this->client->getChannel();
 
-        while ($message = $channel->basic_get($from)) {
+        while ($message = $channel->basic_get($fromQueue)) {
             $info['total']++;
 
             $data = $this->client->unserialize($message->getBody());
@@ -54,7 +54,7 @@ class RabbitMoveCommand extends Command
 
             $this->client
                 ->setMessage($data)
-                ->publish($to);
+                ->publish($toQueue);
 
             $message->ack();
             $info['effected']++;
@@ -64,9 +64,9 @@ class RabbitMoveCommand extends Command
         $this->client->getConnection()->close();
 
         $this->info(
-            'Messages are moved!' . chr(10) .
-            '- Total: ' . $info['total'] . chr(10) .
-            '- Moved: ' . $info['effected'] . chr(10)
+            "Messages are moved!\n".
+            "- Total: " . $info['total'] . "\n".
+            "- Moved: " . $info['effected']
         );
     }
 }
