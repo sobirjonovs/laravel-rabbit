@@ -3,6 +3,7 @@
 namespace App\Rabbitmq\Providers;
 
 use App\Rabbitmq\Console\Commands\DataObjectMakeCommand;
+use App\Rabbitmq\Console\Commands\RabbitMoveCommand;
 use App\Rabbitmq\Console\Commands\ServiceMakeCommand;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +31,7 @@ class RabbitServiceProvider extends ServiceProvider
             $this->commands([
                 DataObjectMakeCommand::class,
                 ServiceMakeCommand::class,
+                RabbitMoveCommand::class,
             ]);
         }
     }
