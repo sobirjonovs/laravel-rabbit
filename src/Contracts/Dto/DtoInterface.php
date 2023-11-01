@@ -2,15 +2,11 @@
 
 namespace App\Rabbitmq\Contracts\Dto;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 
-interface DtoInterface
+interface DtoInterface extends Arrayable
 {
-    /**
-     * @return array
-     */
-    public function toArray(): array;
-
     /**
      * @return string
      */
@@ -36,4 +32,18 @@ interface DtoInterface
      * @return bool
      */
     public function isEmpty(): bool;
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array;
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array
+     */
+    public function messages(): array;
 }
