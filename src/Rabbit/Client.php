@@ -3,7 +3,9 @@
 namespace App\Rabbitmq\Rabbit;
 
 use App\Rabbitmq\Exceptions\DeadLetterHandler;
+use App\Rabbitmq\Exceptions\InvalidLetterHandler;
 use Closure;
+use Illuminate\Validation\ValidationException;
 use Rabbitmq;
 use Exception;
 use Throwable;
@@ -118,6 +120,8 @@ class Client implements RabbitContract
 
     private DeadLetterHandler $deadLetterHandler;
 
+    private InvalidLetterHandler $invalidLetterHandler;
+
     /**
      * @param AMQPStreamConnection $client
      * @throws Exception
@@ -126,9 +130,12 @@ class Client implements RabbitContract
     {
         $this->connection = $client;
         $this->channel = $this->connection->channel();
+
         $this->deadLetterHandler = new DeadLetterHandler();
+        $this->invalidLetterHandler = new InvalidLetterHandler();
 
         $this->queueDeclare(config('amqp.dead_letter_queue'));
+        config('amqp.invalid_letter_queue') && $this->queueDeclare(config('amqp.invalid_letter_queue'));
     }
 
     /**
@@ -303,6 +310,18 @@ class Client implements RabbitContract
                 data_get($data, 'method', 'default'),
                 array_merge(data_get($data, 'params', []), [config('amqp.device_parameter_name') => $this->extract('device', $message)])
             );
+        } catch (ValidationException $validationException) {
+
+            if (!($message->has('reply_to') && $message->has('correlation_id')) && config('amqp.invalid_letter_queue')) {
+
+                $this->invalidLetterHandler->toQueue($data, $validationException, $this);
+                return $this;
+            }
+
+            $result = [
+                'success' => false,
+                'message' => $validationException->errors()
+            ];
         } catch (Throwable $exception) {
             if (!($message->has('reply_to') && $message->has('correlation_id'))) {
 
