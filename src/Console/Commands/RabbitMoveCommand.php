@@ -48,7 +48,7 @@ class RabbitMoveCommand extends Command
             $info['total']++;
 
             $data = $this->client->unserialize($message->getBody());
-            if ($method and data_get($data, 'method', false) !== $method) {
+            if ($method && data_get($data, 'method', false) !== $method) {
                 continue;
             }
 
