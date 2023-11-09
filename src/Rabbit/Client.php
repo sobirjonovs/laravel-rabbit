@@ -134,7 +134,10 @@ class Client implements RabbitContract
         $this->deadLetterHandler = new DeadLetterHandler();
         $this->invalidLetterHandler = new InvalidLetterHandler();
 
-        $this->queueDeclare(config('amqp.dead_letter_queue'));
+        if ($dead_queue =config('amqp.dead_letter_queue')) {
+            $this->queueDeclare($dead_queue);
+        }
+
         config('amqp.invalid_letter_queue') && $this->queueDeclare(config('amqp.invalid_letter_queue'));
     }
 
