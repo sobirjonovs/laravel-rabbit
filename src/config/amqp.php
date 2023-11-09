@@ -45,4 +45,12 @@ return [
      * This works only subscriber and publisher mode
      */
     'dead_letter_queue' => 'dead-letter-queue',
+
+    /**
+     * When message cannot pass validation, the message will be sent to this queue
+     * If name of this queue is null, the message will be deleted
+     *
+     * This works only subscriber and publisher mode
+     */
+    'invalid_letter_queue' => null,
 ];
