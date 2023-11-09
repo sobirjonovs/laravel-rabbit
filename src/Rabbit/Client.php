@@ -116,7 +116,7 @@ class Client implements RabbitContract
     /**
      * @var string $correlation_id
      */
-    private string $correlation_id = '';
+    private string $correlationId = '';
 
     private DeadLetterHandler $deadLetterHandler;
 
@@ -169,7 +169,7 @@ class Client implements RabbitContract
         $this->viaRpc()->publish($queue);
 
         $this->setResultNull()->consumeRpc($this->callback, function (AMQPMessage $message) {
-            if ($this->correlation_id !== $message->get('correlation_id')) {
+            if ($this->correlationId !== $message->get('correlation_id')) {
                 return;
             }
 
@@ -690,10 +690,10 @@ class Client implements RabbitContract
         ]);
 
         if ($this->isRpc() && $this->isNotRpcChannelExists()) {
-            $this->correlation_id = uniqid('rpc_consumer_');
+            $this->correlationId = uniqid('rpc_consumer_');
 
             $this->createRpc()->setExclusiveQueue()->setParams([
-                'reply_to' => $this->callback, 'correlation_id' => $this->correlation_id
+                'reply_to' => $this->callback, 'correlation_id' => $this->correlationId
             ]);
         }
 
