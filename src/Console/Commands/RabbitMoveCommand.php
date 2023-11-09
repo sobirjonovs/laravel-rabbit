@@ -7,11 +7,13 @@ use Illuminate\Console\Command;
 
 class RabbitMoveCommand extends Command
 {
-    public function __construct(
-        private readonly Client $client,
-    )
+    private Client $client;
+
+    public function __construct(Client $client)
     {
         parent::__construct();
+
+        $this->client = $client;
     }
 
     /**
