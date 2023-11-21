@@ -2,21 +2,22 @@
 
 namespace App\Rabbitmq\Rabbit;
 
-use App\Rabbitmq\Exceptions\DeadLetterHandler;
-use App\Rabbitmq\Exceptions\InvalidLetterHandler;
 use Closure;
-use Illuminate\Validation\ValidationException;
 use Rabbitmq;
 use Exception;
 use Throwable;
 use ErrorException;
 use PhpAmqpLib\Wire\AMQPTable;
-use PhpAmqpLib\Message\AMQPMessage;
+use Illuminate\Support\Facades\DB;
 use PhpAmqpLib\Channel\AMQPChannel;
-use Illuminate\Database\Eloquent\Model;
+use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Channel\AbstractChannel;
+use Illuminate\Database\Eloquent\Model;
 use App\Rabbitmq\Contracts\RabbitContract;
+use App\Rabbitmq\Exceptions\DeadLetterHandler;
+use Illuminate\Validation\ValidationException;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use App\Rabbitmq\Exceptions\InvalidLetterHandler;
 
 class Client implements RabbitContract
 {
@@ -178,9 +179,7 @@ class Client implements RabbitContract
             $message->ack(true);
         });
 
-        $client = $this->waitRpc();
-
-        return $client;
+        return $this->waitRpc();
     }
 
     /**
@@ -269,12 +268,17 @@ class Client implements RabbitContract
         try {
             $channel = $this->getRpcChannel();
 
-            while (!$this->result) {
+            while (! is_array($this->result) && blank($this->result)) {
                 $channel->wait(null, false, config('amqp.channel_rpc_timeout'));
             }
 
             return $this->stopRpc()->disableRpc();
         } catch (Throwable $exception) {
+            DB::reconnect();
+
+            $this->getChannel()->basic_recover(true);
+            $this->getConnection()->reconnect();
+
             $this->stopRpc()->disableRpc();
 
             throw new Exception('Service is not responding');
@@ -349,7 +353,6 @@ class Client implements RabbitContract
             ->setMessage($result);
 
         if ($this->isMultiQueue()) {
-
             $client = $client->disableMultiQueue()
                 ->publish($message->get('reply_to'))
                 ->enableMultiQueue();
