@@ -17,6 +17,8 @@ class RabbitServiceProvider extends ServiceProvider
         $configPath = __DIR__ . '/../config/';
         $providerPath = __DIR__ . '/../stubs/';
 
+        $this->mergeConfigFrom($configPath . 'amqp.php', 'amqp');
+
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 $configPath . 'amqp.php' => config_path('amqp.php'),
