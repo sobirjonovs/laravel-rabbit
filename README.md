@@ -120,7 +120,7 @@ The generated files will be located in the following directories:
 
 If you want to change namespace of service and DTO classes, you can replace them in `config/amqp.php`.
 
-```bash
+```php
 <?php
     .
     .
@@ -138,5 +138,39 @@ If you want to change namespace of service and DTO classes, you can replace them
      * It will be merged to root namespace which is App/config('amqp.service_namespace')/config('amqp.dto_namespace')
      */
     'dto_namespace' => 'Dto',
+];
+```
+
+## Additional
+
+While application is accepting message, if exception is happened.
+
+The message will be sent to `dead-letter-queue` which is `config('amqp.dead_letter_queue')`.
+
+The message may not pass from validation, in it the message will be sent to `invalid-queue-letter` which is `config('amqp.invalid_letter_queue')`.
+
+If you don't define `invalid_letter_queue` in your 'config/amqp.php' file. The message will be deleted.
+
+Note that: The both options only work in publisher and subscriber mode.
+
+```php
+<?php
+    .
+    .
+    . 
+    /**
+     * When error is out in service class, that message will be sent to config('amqp.dead-letter-queue')
+     *
+     * This works only subscriber and publisher mode
+     */
+    'dead_letter_queue' => 'dead-letter-queue',
+
+    /**
+     * When message cannot pass validation, the message will be sent to this queue
+     * If name of this queue is null, the message will be deleted
+     *
+     * This works only subscriber and publisher mode
+     */
+    'invalid_letter_queue' => null,
 ];
 ```
