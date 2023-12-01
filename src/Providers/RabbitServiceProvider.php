@@ -17,8 +17,6 @@ class RabbitServiceProvider extends ServiceProvider
         $configPath = __DIR__ . '/../config/';
         $providerPath = __DIR__ . '/../stubs/';
 
-        $this->mergeConfigFrom($configPath . 'amqp.php', 'amqp');
-
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 $configPath . 'amqp.php' => config_path('amqp.php'),
@@ -36,5 +34,12 @@ class RabbitServiceProvider extends ServiceProvider
                 RabbitMoveCommand::class,
             ]);
         }
+    }
+
+    public function register(): void
+    {
+        $configPath = __DIR__ . '/../config/';
+
+        $this->mergeConfigFrom($configPath . 'amqp.php', 'amqp');
     }
 }
