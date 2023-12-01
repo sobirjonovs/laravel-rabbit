@@ -35,4 +35,11 @@ class RabbitServiceProvider extends ServiceProvider
             ]);
         }
     }
+
+    public function register(): void
+    {
+        $configPath = __DIR__ . '/../config/';
+
+        $this->mergeConfigFrom($configPath . 'amqp.php', 'amqp');
+    }
 }
