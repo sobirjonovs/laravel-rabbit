@@ -5,7 +5,9 @@ namespace App\Rabbitmq\Providers;
 use App\Rabbitmq\Console\Commands\DataObjectMakeCommand;
 use App\Rabbitmq\Console\Commands\RabbitMoveCommand;
 use App\Rabbitmq\Console\Commands\ServiceMakeCommand;
+use App\Rabbitmq\Rabbit\MessageDispatcher;
 use Illuminate\Support\ServiceProvider;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 class RabbitServiceProvider extends ServiceProvider
 {
@@ -34,5 +36,52 @@ class RabbitServiceProvider extends ServiceProvider
                 RabbitMoveCommand::class,
             ]);
         }
+    }
+
+    public function register(): void
+    {
+        $this->mergeConfigFrom(__DIR__ . '/../config/amqp.php', 'amqp');
+
+        $this->app->singleton(AMQPStreamConnection::class, function () {
+            return new AMQPStreamConnection(
+                config('amqp.host'),
+                config('amqp.port'),
+                config('amqp.username'),
+                config('amqp.password'),
+                config('amqp.vhost'),
+                config('amqp.insist'),
+                config('amqp.login_method'),
+                config('amqp.login_response'),
+                config('amqp.locale'),
+                config('amqp.connection_timeout'),
+                config('amqp.read_and_write_timeout'),
+                config('amqp.context'),
+                config('amqp.keepalive'),
+                config('amqp.heartbeat'),
+                config('amqp.channel_rpc_timeout'),
+            );
+        });
+
+        $this->app->bind('amqp', function () {
+            return new AMQPStreamConnection(
+                config('amqp.host'),
+                config('amqp.port'),
+                config('amqp.username'),
+                config('amqp.password'),
+                config('amqp.vhost'),
+                config('amqp.insist'),
+                config('amqp.login_method'),
+                config('amqp.login_response'),
+                config('amqp.locale'),
+                config('amqp.connection_timeout'),
+                config('amqp.read_and_write_timeout'),
+                config('amqp.context'),
+                config('amqp.keepalive'),
+                config('amqp.heartbeat'),
+                config('amqp.channel_rpc_timeout'),
+            );
+        });
+
+        $this->app->bind('rabbitmq.dispatcher', MessageDispatcher::class);
     }
 }
