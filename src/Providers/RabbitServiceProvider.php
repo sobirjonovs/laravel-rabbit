@@ -3,6 +3,7 @@
 namespace App\Rabbitmq\Providers;
 
 use App\Rabbitmq\Console\Commands\DataObjectMakeCommand;
+use App\Rabbitmq\Console\Commands\InstallCommand;
 use App\Rabbitmq\Console\Commands\RabbitMoveCommand;
 use App\Rabbitmq\Console\Commands\ServiceMakeCommand;
 use App\Rabbitmq\Rabbit\MessageDispatcher;
@@ -34,6 +35,7 @@ class RabbitServiceProvider extends ServiceProvider
                 DataObjectMakeCommand::class,
                 ServiceMakeCommand::class,
                 RabbitMoveCommand::class,
+                InstallCommand::class,
             ]);
         }
     }
