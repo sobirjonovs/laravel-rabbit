@@ -4,16 +4,10 @@
 composer require sobirjonovs/laravel-rabbit
 ```
 
-## Load configuration files
+After installing the package, publish its assets using the `rabbit:install` Artisan command.
 
-```php
-php artisan vendor:publish --tag=rabbit-configs
-```
-
-## Load service provider
-
-```php
-php artisan vendor:publish --tag=rabbit-providers
+```bash
+php artisan rabbit:install
 ```
 
 ## Settings
