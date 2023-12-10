@@ -29,7 +29,7 @@ class InstallCommand extends Command
         $this->comment('Publishing Rabbit Configuration...');
         $this->callSilent('vendor:publish', ['--tag' => 'rabbit-configs']);
 
-        $this->comment('Publishing Telescope Service Provider...');
+        $this->comment('Publishing Rabbit Service Provider...');
         $this->callSilent('vendor:publish', ['--tag' => 'rabbit-providers']);
 
         $this->registerRabbitServiceProvider();
