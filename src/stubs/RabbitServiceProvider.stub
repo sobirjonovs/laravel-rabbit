@@ -14,20 +14,5 @@ class RabbitServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton(Client::class, function ($app) {
-            $client = new Client($app->make(AMQPStreamConnection::class));
-
-            return $client
-                ->addQueues(['queue-one', 'queue-two'])
-                ->setDefaultQueue('queue-one')
-                ->setColumn('name')
-                ->setGuard('web') // if not provided, default guard will be used
-                ->setUser('admin') // remote auth user name
-                ->disableMultiQueue()
-                // authentication is disabled by default
-                // ->disableAuthentication()
-                ->enableAuthentication()
-                ->init();
-        });
     }
 }

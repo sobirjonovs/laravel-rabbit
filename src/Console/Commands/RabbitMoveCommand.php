@@ -9,11 +9,9 @@ class RabbitMoveCommand extends Command
 {
     private Client $client;
 
-    public function __construct(Client $client)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->client = $client;
     }
 
     /**
@@ -35,6 +33,8 @@ class RabbitMoveCommand extends Command
      */
     public function handle(): void
     {
+        $this->client = new Client();
+
         $method = $this->option('method');
         $toQueue = $this->argument('to-queue');
         $fromQueue = $this->argument('from-queue');

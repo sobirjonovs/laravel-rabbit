@@ -6,6 +6,17 @@ return [
     'username' => env('AMQP_USER', 'guest'),
     'password' => env('AMQP_PASSWORD', 'guest'),
     'vhost' => env('AMQP_VHOST', '/'),
+
+    'config' => [
+
+        'default_queue' => 'default',
+
+        'is_multi_queue' => false,
+
+        'queues' => ['default', 'foo', 'bar'],
+    ],
+
+
     'insist' => false,
     'qos' => true,
     'qos_prefetch_size' => 0,

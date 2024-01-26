@@ -43,47 +43,5 @@ class RabbitServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/amqp.php', 'amqp');
-
-        $this->app->singleton(AMQPStreamConnection::class, function () {
-            return new AMQPStreamConnection(
-                config('amqp.host'),
-                config('amqp.port'),
-                config('amqp.username'),
-                config('amqp.password'),
-                config('amqp.vhost'),
-                config('amqp.insist'),
-                config('amqp.login_method'),
-                config('amqp.login_response'),
-                config('amqp.locale'),
-                config('amqp.connection_timeout'),
-                config('amqp.read_and_write_timeout'),
-                config('amqp.context'),
-                config('amqp.keepalive'),
-                config('amqp.heartbeat'),
-                config('amqp.channel_rpc_timeout'),
-            );
-        });
-
-        $this->app->bind('amqp', function () {
-            return new AMQPStreamConnection(
-                config('amqp.host'),
-                config('amqp.port'),
-                config('amqp.username'),
-                config('amqp.password'),
-                config('amqp.vhost'),
-                config('amqp.insist'),
-                config('amqp.login_method'),
-                config('amqp.login_response'),
-                config('amqp.locale'),
-                config('amqp.connection_timeout'),
-                config('amqp.read_and_write_timeout'),
-                config('amqp.context'),
-                config('amqp.keepalive'),
-                config('amqp.heartbeat'),
-                config('amqp.channel_rpc_timeout'),
-            );
-        });
-
-        $this->app->bind('rabbitmq.dispatcher', MessageDispatcher::class);
     }
 }
