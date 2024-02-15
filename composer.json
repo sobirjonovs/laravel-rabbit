@@ -1,37 +1,47 @@
 {
-    "name": "sobirjonovs/laravel-rabbit",
-    "description": "Easy tool for working with RabbitMQ",
-    "type": "library",
-    "require": {
-        "php": "^7.4|^8.0",
-        "php-amqplib/php-amqplib": "^3.1",
-        "illuminate/support": ">8"
+  "name": "usmonaliyev/laravel-rabbit",
+  "description": "Easy tool for working with RabbitMQ",
+  "type": "library",
+  "require": {
+    "php": "^7.4|^8.0",
+    "php-amqplib/php-amqplib": "^3.1",
+    "illuminate/support": ">8"
+  },
+  "homepage": "https://github.com/usmonaliyev/laravel-rabbit",
+  "keywords": [
+    "RabbitMQ",
+    "Laravel rabbit-mq",
+    "rabbit",
+    "client"
+  ],
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "App\\Rabbitmq\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Sanjarbek Sobirjonov",
+      "email": "sobirjonovsdev@gmail.com",
+      "homepage": "https://github.com/sobirjonovs"
     },
-    "homepage": "https://github.com/sobirjonovs/laravel-rabbit",
-    "keywords": ["RabbitMQ", "Laravel rabbit-mq", "rabbit", "client"],
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "App\\Rabbitmq\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "Sanjarbek Sobirjonov",
-            "email": "sobirjonovsdev@gmail.com",
-            "homepage": "https://github.com/sobirjonovs"
-        }
-    ],
-    "extra": {
-        "laravel": {
-            "providers": [
-                "App\\Rabbitmq\\Providers\\RabbitServiceProvider"
-            ],
-            "aliases": {
-                "Rabbitmq": "App\\Rabbitmq\\Facades\\RabbitmqFacade"
-            }
-        }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    {
+      "name": "Temur Usmonaliyev",
+      "email": "temur5319436@gmail.com",
+      "homepage": "https://github.com/Temur5319436"
+    }
+  ],
+  "extra": {
+    "laravel": {
+      "providers": [
+        "App\\Rabbitmq\\Providers\\RabbitServiceProvider"
+      ],
+      "aliases": {
+        "Rabbitmq": "App\\Rabbitmq\\Facades\\RabbitmqFacade"
+      }
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
