@@ -124,11 +124,28 @@ class Client implements RabbitContract
     private InvalidLetterHandler $invalidLetterHandler;
 
     /**
-     * @param AMQPStreamConnection $client
      * @throws Exception
      */
-    public function __construct(AMQPStreamConnection $client)
+    public function __construct()
     {
+        $client = new AMQPStreamConnection(
+            config('amqp.host'),
+            config('amqp.port'),
+            config('amqp.username'),
+            config('amqp.password'),
+            config('amqp.vhost'),
+            config('amqp.insist'),
+            config('amqp.login_method'),
+            config('amqp.login_response'),
+            config('amqp.locale'),
+            config('amqp.connection_timeout'),
+            config('amqp.read_and_write_timeout'),
+            config('amqp.context'),
+            config('amqp.keepalive'),
+            config('amqp.heartbeat'),
+            config('amqp.channel_rpc_timeout'),
+        );
+
         $this->connection = $client;
         $this->channel = $this->connection->channel();
 
@@ -142,6 +159,14 @@ class Client implements RabbitContract
         if ($invalid_queue = config('amqp.invalid_letter_queue')) {
             $this->queueDeclare($invalid_queue);
         }
+
+        $this->queues = config('amqp.config.queues');
+
+        $this->isMultiQueue = config('amqp.config.is_multi_queue');
+
+        $this->defaultQueue = config('amqp.config.default_queue');
+
+        $this->init();
     }
 
     /**
@@ -752,7 +777,7 @@ class Client implements RabbitContract
      */
     public function createRpc(): Client
     {
-        $this->rpcConnection = app('amqp');
+        $this->rpcConnection = $this->connection;
         $this->rpcChannel = $this->rpcConnection->channel();
 
         return $this;
