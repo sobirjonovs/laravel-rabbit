@@ -2,6 +2,7 @@
 
 namespace App\Rabbitmq\Facades;
 
+use App\Rabbitmq\Rabbit\MessageDispatcher;
 use Illuminate\Support\Facades\Facade;
 
 class RabbitmqFacade extends Facade
@@ -11,6 +12,6 @@ class RabbitmqFacade extends Facade
      */
     protected static function getFacadeAccessor(): string
     {
-        return 'rabbitmq.dispatcher';
+        return MessageDispatcher::class;
     }
 }
