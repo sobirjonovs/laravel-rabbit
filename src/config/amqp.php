@@ -6,17 +6,6 @@ return [
     'username' => env('AMQP_USER', 'guest'),
     'password' => env('AMQP_PASSWORD', 'guest'),
     'vhost' => env('AMQP_VHOST', '/'),
-
-    'config' => [
-
-        'default_queue' => 'default',
-
-        'is_multi_queue' => false,
-
-        'queues' => ['default', 'foo', 'bar'],
-    ],
-
-
     'insist' => false,
     'qos' => true,
     'qos_prefetch_size' => 0,
@@ -64,4 +53,10 @@ return [
      * This works only subscriber and publisher mode
      */
     'invalid_letter_queue' => null,
+
+    'config' => [
+        'default_queue' => '', // queue name
+        'is_multi_queue' => null, // true or false
+        'queues' => [], // ['queue-1', 'queue-2', 'queue-3']
+    ],
 ];
