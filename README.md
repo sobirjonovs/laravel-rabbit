@@ -1,7 +1,7 @@
 # Installation
 
 ```php
-composer require sobirjonovs/laravel-rabbit
+composer require usmonaliyev/laravel-rabbit
 ```
 
 After installing the package, publish its assets using the `rabbit:install` Artisan command.
@@ -167,4 +167,20 @@ Note that: The both options only work in publisher and subscriber mode.
      */
     'invalid_letter_queue' => null,
 ];
+```
+
+## Queues
+
+You need to configure your queues in `config/amqp.php`.
+
+```php
+    ...
+    'config' => [
+
+        'default_queue' => 'default',
+
+        'is_multi_queue' => false,
+
+        'queues' => ['default', 'foo', 'bar'],
+    ],
 ```
