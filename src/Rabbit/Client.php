@@ -128,25 +128,7 @@ class Client implements RabbitContract
      */
     public function __construct()
     {
-        $client = new AMQPStreamConnection(
-            config('amqp.host'),
-            config('amqp.port'),
-            config('amqp.username'),
-            config('amqp.password'),
-            config('amqp.vhost'),
-            config('amqp.insist'),
-            config('amqp.login_method'),
-            config('amqp.login_response'),
-            config('amqp.locale'),
-            config('amqp.connection_timeout'),
-            config('amqp.read_and_write_timeout'),
-            config('amqp.context'),
-            config('amqp.keepalive'),
-            config('amqp.heartbeat'),
-            config('amqp.channel_rpc_timeout'),
-        );
-
-        $this->connection = $client;
+        $this->connection = $this->createConnection();
         $this->channel = $this->connection->channel();
 
         $this->deadLetterHandler = new DeadLetterHandler();
@@ -180,6 +162,30 @@ class Client implements RabbitContract
         $this->setQos();
 
         return $this;
+    }
+
+    /**
+     * @return AMQPStreamConnection
+     */
+    public function createConnection(): AMQPStreamConnection
+    {
+        return new AMQPStreamConnection(
+            config('amqp.host'),
+            config('amqp.port'),
+            config('amqp.username'),
+            config('amqp.password'),
+            config('amqp.vhost'),
+            config('amqp.insist'),
+            config('amqp.login_method'),
+            config('amqp.login_response'),
+            config('amqp.locale'),
+            config('amqp.connection_timeout'),
+            config('amqp.read_and_write_timeout'),
+            config('amqp.context'),
+            config('amqp.keepalive'),
+            config('amqp.heartbeat'),
+            config('amqp.channel_rpc_timeout'),
+        );
     }
 
     /**
@@ -775,7 +781,10 @@ class Client implements RabbitContract
      */
     public function createRpc(): Client
     {
-        $this->rpcConnection = $this->connection;
+        if (! $this->getRpcConnection()) {
+            $this->rpcConnection = $this->createConnection();
+        }
+
         $this->rpcChannel = $this->rpcConnection->channel();
 
         return $this;
