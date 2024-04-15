@@ -4,6 +4,7 @@
 <a href="https://packagist.org/packages/sobirjonovs/laravel-rabbit"><img src="https://img.shields.io/packagist/l/sobirjonovs/laravel-rabbit" alt="License"></a>
 <a href="https://packagist.org/packages/sobirjonovs/laravel-rabbit"><img src="https://img.shields.io/badge/Telegram-Group-blue.svg?logo=telegram" alt="Community"></a>
 </p>
+
 # Installation
 
 ```php
