@@ -9,11 +9,11 @@ return [
 
     'config' => [
 
-        'default_queue' => 'default',
+        'default_queue' => '', // queue name
 
-        'is_multi_queue' => false,
+        'is_multi_queue' => null, // true or false
 
-        'queues' => ['default', 'foo', 'bar'],
+        'queues' => [], // ['queue-1', 'queue-2', 'queue-3']
     ],
 
 
