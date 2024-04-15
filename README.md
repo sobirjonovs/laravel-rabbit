@@ -1,7 +1,7 @@
 # Installation
 
 ```php
-composer require usmonaliyev/laravel-rabbit
+composer require sobirjonovs/laravel-rabbit
 ```
 
 After installing the package, publish its assets using the `rabbit:install` Artisan command.
