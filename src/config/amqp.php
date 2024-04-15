@@ -56,7 +56,7 @@ return [
 
     'config' => [
         'default_queue' => '', // queue name
-        'is_multi_queue' => null, // true or false
+        'is_multi_queue' => true, // true or false
         'queues' => [], // ['queue-1', 'queue-2', 'queue-3']
     ],
 ];
