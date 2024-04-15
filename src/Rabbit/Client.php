@@ -160,13 +160,11 @@ class Client implements RabbitContract
             $this->queueDeclare($invalid_queue);
         }
 
-        $this->queues = config('amqp.config.queues');
+        $this->queues = config('amqp.config.queues', []);
 
-        $this->isMultiQueue = config('amqp.config.is_multi_queue');
+        $this->isMultiQueue = config('amqp.config.is_multi_queue', true);
 
-        $this->defaultQueue = config('amqp.config.default_queue');
-
-        $this->init();
+        $this->defaultQueue = config('amqp.config.default_queue', "");
     }
 
     /**
