@@ -29,6 +29,11 @@ class Client implements RabbitContract
     protected $channel;
 
     /**
+     * @var string $queue
+     */
+    protected $queue;
+
+    /**
      * @var AbstractChannel|AMQPChannel $rpcChannel
      */
     protected $rpcChannel;
@@ -220,6 +225,8 @@ class Client implements RabbitContract
     {
         $callback = $callback->bindTo($this, get_class($this));
 
+        $this->queue = $queue;
+
         $this->getChannel()->basic_consume(
             $queue,
             '',
@@ -241,6 +248,8 @@ class Client implements RabbitContract
     public function consumeRpc(string $queue, Closure $callback): Client
     {
         $callback = $callback->bindTo($this, get_class($this));
+
+        $this->queue = $queue;
 
         $this->getRpcChannel()->basic_consume(
             $queue,
@@ -351,7 +360,11 @@ class Client implements RabbitContract
         } catch (ValidationException $validationException) {
 
             if (!($message->has('reply_to') && $message->has('correlation_id')) && config('amqp.invalid_letter_queue')) {
-
+                if(is_array($data))
+                {
+                    $data['queue'] = $this->queue;
+                }
+                
                 $this->invalidLetterHandler->toQueue($data, $validationException, $this);
                 return $this;
             }
@@ -362,6 +375,10 @@ class Client implements RabbitContract
             ];
         } catch (Throwable $exception) {
             if (!($message->has('reply_to') && $message->has('correlation_id'))) {
+                if(is_array($data))
+                {
+                    $data['queue'] = $this->queue;
+                }
 
                 $this->deadLetterHandler->toQueue($data, $exception, $this);
             } else {
